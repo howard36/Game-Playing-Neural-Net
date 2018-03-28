@@ -1,0 +1,6 @@
+﻿  Layer.cpp
+  Neural Net.cpp
+c:\users\howard halim\documents\programs\projects\neural-net-tic-tac-toe\tic tac toe\neural net.cpp(41): warning C4018: '<': signed/unsigned mismatch
+c:\users\howard halim\documents\programs\projects\neural-net-tic-tac-toe\tic tac toe\neural net.cpp(66): warning C4018: '<': signed/unsigned mismatch
+  Generating Code...
+  Tic Tac Toe.vcxproj -> C:\Users\Howard Halim\Documents\Programs\Projects\Neural-Net-Tic-Tac-Toe\Tic Tac Toe\Debug\Tic Tac Toe.exe
