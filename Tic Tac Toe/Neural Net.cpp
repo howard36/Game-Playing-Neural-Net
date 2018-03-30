@@ -83,7 +83,7 @@ public:
 		}
 		return children[bestMove];
 	}
-	void expand() {
+	double expand() { // expands node, returns evaluation
 		if (!leaf) {
 			cout << "Error: tried to expand non-leaf node\n";
 			return;
@@ -100,6 +100,17 @@ public:
 			else
 				children[i] = nullptr;
 		}
+		double val = 0; // replace with NN's evaluation
+		return val;
+	}
+	void update(double v, Node* child) {
+		for (int i = 0; i < 9; i++) {
+			if (children[i] == child) {
+				N[i]++;
+				W[i] += v;
+				Q[i] = W[i] / N[i];
+			}
+		}
 	}
 	void destroy() { // to deallocate memory
 		for (int i = 0; i < 9; i++) {
@@ -107,7 +118,20 @@ public:
 			delete children[i];
 		}
 	}
+	bool isLeaf() { return leaf; }
+	Node* getParent() { return parent; }
 };
+
+void simulate(Node* start) {
+	Node* current = start;
+	while (!current->isLeaf())
+		current = current->chooseBest();
+	double v = current->expand();
+	while (current != start) {
+		(current->getParent())->update(v, current);
+		current = current->getParent();
+	}
+}
 
 Mat play() {
 	Vec start = Vec::Zero(10);

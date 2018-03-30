@@ -20,12 +20,12 @@ public:
 	void feedForward(Mat& input); // pass by reference. input layer will output as output layer
 
 private:
+	class Node;
+
 	// functions
 	Mat play(); // plays a game against itself, returns training data of MCTS probability distributions
 
-	void simulate(); // go down the MCTS tree, based on moves chosen by the neural net
-
-	void expand(int u); // expands the node at index i
+	void simulate(Node& start); // go down the MCTS tree, based on moves chosen by the neural net
 	
 	// properties
 	checker_type checker;
