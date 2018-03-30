@@ -50,14 +50,12 @@ void FullyConnectedLayer<ActivationFn>::apply(Mat& input) {
 FC_LAYER_TEMPLATE
 void FullyConnectedLayer<ActivationFn>::computeDeltaLast(const Mat& output, const Mat& ans, Mat& WTD) {
 	delta = costDeriv(output, ans).cwiseProduct(derivs); // delta^L = grad_a(C) * sigma'(z^L)	(BP1)
-//	cout << "\nLayer 1: delta is " << delta.rows() << " x " << delta.cols();
 	WTD = weights.transpose() * delta; // this is needed to compute delta^(L-1)
 }
 
 FC_LAYER_TEMPLATE
 void FullyConnectedLayer<ActivationFn>::computeDeltaBack(Mat& WTD) {
 	delta = WTD.cwiseProduct(derivs); // delta^l = ((W^(l+1))^T x delta^l) * sigma'(z)		(BP2)
-//	cout << "\nLayer 0: delta is " << delta.rows() << " x " << delta.cols();
 	WTD = weights.transpose() * delta; // this is needed to compute delta^(l-1)
 }
 
@@ -72,6 +70,7 @@ inline Mat FullyConnectedLayer<ActivationFn>::costDeriv(const Mat& output, const
 	 return output - ans;
 }
 
+// for debugging purposes
 FC_LAYER_TEMPLATE
 void FullyConnectedLayer<ActivationFn>::print()
 {

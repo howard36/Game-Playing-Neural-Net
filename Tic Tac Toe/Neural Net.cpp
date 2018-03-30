@@ -33,6 +33,88 @@ void Network2::feedForward(Mat& input) {
 		layers[i]->apply(input);
 }
 
+// move to new file
+class Node
+{
+private:
+	Node * children[9];
+	Node* parent;
+	Vec state;
+	bool valid[9]; // whether a move is valid
+	int N[9]; // visit count
+	double W[9]; // total action value
+	double Q[9]; // mean action value
+	double P[9]; // prior probability
+	bool leaf;
+	const double c_puct = 0.01; // change?
+
+public:
+	Node(Vec s, Node* p) {
+		if (s.rows != 10)
+			cout << "Error: node initialize with invalid state\n";
+		state = s;
+		parent = p;
+		for (int i = 0; i < 9; i++) {
+			valid[i] = (state[i] == 0);
+			N[i] = 0;
+			W[i] = 0;
+			Q[i] = 0;
+			P[i] = 0;
+		}
+		leaf = true;
+	}
+	Node* chooseBest() {
+		if (leaf) {
+			cout << "Error: choosing from leaf node\n";
+			return nullptr;
+		}
+		double totalVisits = 0;
+		for (int i = 0; i < 9; i++)
+			totalVisits += N[i];
+		double bestVal = -1; int bestMove = -1;
+		for (int i = 0; i < 9; i++) {
+			if (valid[i]) {
+				double val = Q[i] + c_puct * P[i] * sqrt(totalVisits) / (1 + N[i]);
+				if (val > bestVal) {
+					bestVal = val;
+					bestMove = i;
+				}
+			}
+		}
+		return children[bestMove];
+	}
+	void expand() {
+		if (!leaf) {
+			cout << "Error: tried to expand non-leaf node\n";
+			return;
+		}
+		leaf = false;
+		// add call to network for probabilities
+		for (int i = 0; i < 9; i++) {
+			if (valid[i]) {
+				Vec copy = state;
+				copy[i] = state[9];
+				copy[9] = -copy[9];
+				children[i] = new Node(copy, this);
+			}
+			else
+				children[i] = nullptr;
+		}
+	}
+	void destroy() { // to deallocate memory
+		for (int i = 0; i < 9; i++) {
+			children[i]->destroy();
+			delete children[i];
+		}
+	}
+};
+
+Mat play() {
+	Vec start = Vec::Zero(10);
+	start[9] = 1;
+	Node current = Node(start, nullptr);
+}
+
 void Network2::train(trbatch& data, trbatch& test, int numEpochs) {
 	for (int epoch = 1; epoch <= numEpochs; ++epoch)
 	{

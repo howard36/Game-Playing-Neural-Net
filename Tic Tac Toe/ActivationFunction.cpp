@@ -25,8 +25,7 @@ Mat SigmoidActivationFunction::activationDeriv(const Mat& x) {
 }
 
 Mat TanhActivationFunction::activation(const Mat& x) {
-	return x.unaryExpr(&mytanh); //temporarily commented, because tanh is overloaded
-	return x;
+	return x.unaryExpr(&mytanh);
 }
 Mat TanhActivationFunction::activationDeriv(const Mat& x) {
 	return x.unaryExpr(&tanhDeriv);
@@ -35,11 +34,12 @@ Mat TanhActivationFunction::activationDeriv(const Mat& x) {
 Mat SoftMaxActivationFunction::activation(const Mat& x) {
 
 	// Probs a better way to do it.
-	Mat y = x.unaryExpr(&myexp); //temporarily commented, because exp is overloaded
-	// Mat y = x;
+	Mat y = x.unaryExpr(&myexp);
 	for (int c = 0; c < y.cols(); ++c){
 		double sum = y.col(c).sum();
 		y.col(c) /= sum;
 	}
 	return y;
 }
+
+// add soft max deriv

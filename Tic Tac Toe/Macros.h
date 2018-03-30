@@ -10,6 +10,7 @@
 #include <functional>
 #include <chrono>
 #include <Eigen/Dense>
+using namespace std;
 
 typedef long long ll;
 
@@ -24,3 +25,5 @@ typedef std::pair<Vec, Vec> trdata;
 typedef std::vector<trdata> trbatch;
 
 typedef std::function<std::pair<int, double>(const Mat&, const Mat&) > checker_type;
+
+typedef FullyConnectedLayer<SigmoidActivationFunction> SigLayer;
