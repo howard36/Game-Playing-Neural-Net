@@ -1,8 +1,11 @@
 #pragma once
 
+#include <Eigen/Dense>
 #include "Macros.h"
 
 // The layer interface. Is an abstract class
+
+typedef Eigen::MatrixXd Mat;
 
 class Layer {
 public:

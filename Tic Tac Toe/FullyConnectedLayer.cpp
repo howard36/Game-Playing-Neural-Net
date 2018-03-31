@@ -9,6 +9,7 @@ FC_LAYER_TEMPLATE
 FullyConnectedLayer<ActivationFn>::FullyConnectedLayer() {}
 
 // currently, this is just a fully connected layer using sigmoid activation function
+
 FC_LAYER_TEMPLATE
 FullyConnectedLayer<ActivationFn>::FullyConnectedLayer(int _in, int _out) {
 	in = _in;
@@ -49,7 +50,8 @@ void FullyConnectedLayer<ActivationFn>::apply(Mat& input) {
 // WTD is W^T x D, where W^T is the transpose of weight matrix, D is delta vector
 FC_LAYER_TEMPLATE
 void FullyConnectedLayer<ActivationFn>::computeDeltaLast(const Mat& output, const Mat& ans, Mat& WTD) {
-	delta = costDeriv(output, ans).cwiseProduct(derivs); // delta^L = grad_a(C) * sigma'(z^L)	(BP1)
+//	delta = costDeriv(output, ans).cwiseProduct(derivs); // delta^L = grad_a(C) * sigma'(z^L)	(BP1)
+	delta = output - ans; // hardcoded for softmax layer and cross entropy cost function! (BP1 assumes a_j only depends on z_j)
 	WTD = weights.transpose() * delta; // this is needed to compute delta^(L-1)
 }
 
@@ -74,7 +76,7 @@ inline Mat FullyConnectedLayer<ActivationFn>::costDeriv(const Mat& output, const
 FC_LAYER_TEMPLATE
 void FullyConnectedLayer<ActivationFn>::print()
 {
-//	cout << "weights:\n" << weights;
+	cout << "weights:\n" << weights;
 //	cout << "\ndelta:\n" << delta;
 //	cout << "\nprevactivation:\n" << prevActivations;
 	cout << "\npre\n" << pre;
@@ -87,3 +89,4 @@ inline pair<int, int> FullyConnectedLayer<ActivationFn>::getSize() { return make
 
 template class FullyConnectedLayer<SigmoidActivationFunction>;
 template class FullyConnectedLayer<TanhActivationFunction>;
+template class FullyConnectedLayer<SoftMaxActivationFunction>;

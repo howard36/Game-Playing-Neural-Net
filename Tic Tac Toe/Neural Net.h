@@ -3,6 +3,8 @@
 #include "Macros.h"
 #include "Layer.h"
 
+class Node;
+
 class Network2
 {
 
@@ -20,12 +22,11 @@ public:
 	void feedForward(Mat& input); // pass by reference. input layer will output as output layer
 
 private:
-	class Node;
 
 	// functions
-	Mat play(); // plays a game against itself, returns training data of MCTS probability distributions
+	Vec selfPlay(); // plays a game against itself, returns training data of MCTS probability distributions
 
-	void simulate(Node& start); // go down the MCTS tree, based on moves chosen by the neural net
+	void simulate(Node* start); // go down the MCTS tree, based on moves chosen by the neural net
 	
 	// properties
 	checker_type checker;

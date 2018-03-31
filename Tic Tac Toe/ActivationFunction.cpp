@@ -32,14 +32,22 @@ Mat TanhActivationFunction::activationDeriv(const Mat& x) {
 }
 
 Mat SoftMaxActivationFunction::activation(const Mat& x) {
-
-	// Probs a better way to do it.
-	Mat y = x.unaryExpr(&myexp);
-	for (int c = 0; c < y.cols(); ++c){
-		double sum = y.col(c).sum();
-		y.col(c) /= sum;
+	Mat y = x;
+	for (int i = 0; i < y.cols(); i++) {
+		double max = y(0, i);
+		for (int j = 0; j < y.rows(); j++) {
+			if (y(j, i) > max)
+				max = y(j, i);
+		}
+		for (int j = 0; j < y.rows(); j++)
+			y(j, i) -= max;
 	}
+	y = y.unaryExpr(&myexp);
+	for (int c = 0; c < y.cols(); ++c)
+		y.col(c) /= y.col(c).sum();
 	return y;
 }
 
-// add soft max deriv
+Mat SoftMaxActivationFunction::activationDeriv(const Mat& x) {
+	return Mat(1,1); // not actually used
+}

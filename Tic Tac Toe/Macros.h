@@ -1,5 +1,7 @@
 #pragma once
 
+//#include "FullyConnectedLayer.h"
+
 #include <vector>
 #include <random>
 #include <algorithm>
@@ -25,5 +27,3 @@ typedef std::pair<Vec, Vec> trdata;
 typedef std::vector<trdata> trbatch;
 
 typedef std::function<std::pair<int, double>(const Mat&, const Mat&) > checker_type;
-
-typedef FullyConnectedLayer<SigmoidActivationFunction> SigLayer;

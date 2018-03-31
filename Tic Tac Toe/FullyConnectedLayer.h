@@ -4,6 +4,8 @@
 #include "ActivationFunction.h"
 #include "Layer.h"
 
+
+
 template<typename ActivationFn>
 class FullyConnectedLayer : public Layer
 {
