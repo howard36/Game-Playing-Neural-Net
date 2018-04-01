@@ -52,6 +52,7 @@ FC_LAYER_TEMPLATE
 void FullyConnectedLayer<ActivationFn>::computeDeltaLast(const Mat& output, const Mat& ans, Mat& WTD) {
 //	delta = costDeriv(output, ans).cwiseProduct(derivs); // delta^L = grad_a(C) * sigma'(z^L)	(BP1)
 	delta = output - ans; // hardcoded for softmax layer and cross entropy cost function! (BP1 assumes a_j only depends on z_j)
+	delta.row(delta.rows()-1) = delta.row(delta.rows() - 1).cwiseProduct(derivs.row(derivs.rows()-1)); // for custom cost function
 	WTD = weights.transpose() * delta; // this is needed to compute delta^(L-1)
 }
 
@@ -87,6 +88,73 @@ void FullyConnectedLayer<ActivationFn>::print()
 FC_LAYER_TEMPLATE
 inline pair<int, int> FullyConnectedLayer<ActivationFn>::getSize() { return make_pair(in, out); }
 
+FC_LAYER_TEMPLATE
+void FullyConnectedLayer<ActivationFn>::write(ofstream& fout) {
+	fout << "1\n"; // layer type of a fully connected layer
+	fout << ActivationFn::id() << "\n";
+	fout << in << " " << out << "\n";
+	fout << weights << "\n" << biases << "\n";
+}
+
+Layer* read_FC(ifstream& fin) {
+	int activationType, in, out;
+	fin >> activationType >> in >> out;
+	if (activationType == 1) {
+		auto layer = new FullyConnectedLayer<SigmoidActivationFunction>(in, out);
+		for (int r = 0; r < out; r++) {
+			for (int c = 0; c < in; c++) {
+				fin >> (*layer).weights(r, c);
+			}
+		}
+		for (int r = 0; r < out; r++) {
+			fin >> (*layer).biases(r);
+		}
+		return layer;
+	}
+	else if (activationType == 2) {
+		auto layer = new FullyConnectedLayer<TanhActivationFunction>(in, out);
+		for (int r = 0; r < out; r++) {
+			for (int c = 0; c < in; c++) {
+				fin >> (*layer).weights(r, c);
+			}
+		}
+		for (int r = 0; r < out; r++) {
+			fin >> (*layer).biases(r);
+		}
+		return layer;
+	}
+	else if (activationType == 3) {
+		auto layer = new FullyConnectedLayer<SoftMaxActivationFunction>(in, out);
+		for (int r = 0; r < out; r++) {
+			for (int c = 0; c < in; c++) {
+				fin >> (*layer).weights(r, c);
+			}
+		}
+		for (int r = 0; r < out; r++) {
+			fin >> (*layer).biases(r);
+		}
+		return layer;
+	}
+	else if (activationType == 4) {
+		auto layer = new FullyConnectedLayer<CustomActivationFunction>(in, out);
+		for (int r = 0; r < out; r++) {
+			for (int c = 0; c < in; c++) {
+				fin >> (*layer).weights(r, c);
+			}
+		}
+		for (int r = 0; r < out; r++) {
+			fin >> (*layer).biases(r);
+		}
+		return layer;
+	}
+	else {
+		cout << "Error: Invalid activation type when reading layer from file\n";
+		return nullptr;
+	}
+}
+
+
 template class FullyConnectedLayer<SigmoidActivationFunction>;
 template class FullyConnectedLayer<TanhActivationFunction>;
 template class FullyConnectedLayer<SoftMaxActivationFunction>;
+template class FullyConnectedLayer<CustomActivationFunction>;

@@ -1,9 +1,14 @@
 #include "Macros.h"
 #include "Neural Net.h"
+#include "FullyConnectedLayer.h"
 
 using namespace std;
 
 // Network2::Network2(const std::vector<Layer>& _layers, const checker_type& ch, int mbs, double lr, double maxr, double minr, double L2, double m)
+
+Network2::Network2() {
+
+}
 
 Network2::Network2(const std::vector<Layer*>& _layers, const checker_type& ch, int _in, int _out, int mbs, double lr) {
 	layers = _layers;
@@ -28,6 +33,30 @@ Network2::~Network2() {
 	}
 }
 
+ifstream& operator>> (ifstream& fin, Network2& n) {
+	fin >> n.numLayers >> n.miniBatchSize >> n.learnRate >> n.age;
+	n.layers.clear();
+	for (int i = 0; i < n.numLayers; i++) {
+		n.layers.push_back(read(fin));
+		if (n.layers[i] == NULL) {
+			cout << "Error: Network has null layer\n";
+		}
+	}
+	n.in = n.layers[0]->getSize().first;
+	n.out = n.layers[n.numLayers - 1]->getSize().second;
+	return fin;
+}
+
+ofstream& operator<< (ofstream& fout, Network2& n) {
+	fout << n.numLayers << " " << n.miniBatchSize << " " << n.learnRate << " " << n.age << "\n";
+	for (int i = 0; i < n.numLayers; i++) {
+		n.layers[i]->write(fout);
+	}
+	return fout;
+}
+
+void Network2::setChecker(const checker_type& ch) { checker = ch; }
+
 void Network2::feedForward(Mat& input) {
 	for (int i = 0; i < numLayers; ++i)
 		layers[i]->apply(input);
@@ -35,32 +64,75 @@ void Network2::feedForward(Mat& input) {
 
 vector<bool> validMoves(Vec state) {
 	vector<bool> v(9, false);
-	for (int i = 0; i < 9; i++)
-		v[i] = (state(i) == 0);
+	for (int i = 0; i < 9; i++) {
+		if (state(i) == 0) {
+			v[i] = true;
+		}
+	}
 	return v;
 }
 
 int choose(Vec distribution) {
+	if (distribution.size() != 10) {
+		cout << "Error: distribution size does not match\n";
+	}
+	if (abs(distribution.sum() - distribution(9) - 1) > 0.0001) {
+		cout << "Error: probabilities do not add up to 1\n";
+		cout << distribution;
+	}
 	double num = (double)rand() / RAND_MAX;
 	for (int i = 0; i < 9; i++) {
-		if (num <= distribution(i))
+		if (num < distribution(i)) {
 			return i;
+		}
 		num -= distribution(i);
 	}
-	cout << "Error: no random move was not chosen\n";
-	return 0;
+	// if no random move has been chosen yet (which happens rarely), it chooses the one with greatest probability
+	double bestProb = 0; int bestMove = -1;
+	for (int i = 0; i < 9; i++) {
+		if (distribution(i) > bestProb) {
+			bestProb = distribution(i);
+			bestMove = i;
+		}
+	}
+	return bestMove;
 }
 
 // decides whether the state is an end state, and if so, who the winner is
-pair<bool, int> evaluateState(Vec state) {
-	return make_pair(false, 0);
+// specialized for the game of tic tac toe
+pair<bool, double> evaluateState(Vec state) {
+	// check for 3 in a rows
+	for (int i = 0; i < 3; i++) {
+		if (state(3 * i) == state(3 * i + 1) && state(3 * i + 1) == state(3 * i + 2)) {
+			if (state(3 * i) != 0)
+				return make_pair(true, state(3 * i));
+		}
+		if (state(i) == state(i + 3) && state(i + 3) == state(i + 6)) {
+			if (state(i) != 0)
+				return make_pair(true, state(i));
+		}
+	}
+	if (state(0) == state(4) && state(4) == state(8)) {
+		if (state(0) != 0)
+			return make_pair(true, state(0));
+	}
+	if (state(2) == state(4) && state(4) == state(6)) {
+		if (state(2) != 0)
+			return make_pair(true, state(2));
+	}
+	// no 3 in a rows found
+	for (int i = 0; i < 9; i++) {
+		if (state(i) == 0) // available move
+			return make_pair(false, 0);
+	}
+	return make_pair(true, 0); // tie
 }
 
 // move to new file
 class Node
 {
 private:
-	Node * children[9];
+	Node* children[9];
 	Node* parent;
 	Vec state;
 	vector<bool> valid; // whether a move is valid
@@ -75,21 +147,29 @@ private:
 
 public:
 	Node(Vec s, Node* p) {
-		if (s.rows() != 10)
-			cout << "Error: node initialize with invalid state\n";
+		if (s.rows() != 9)
+			cout << "Error: node initialized with invalid state\n";
 		state = s;
 		parent = p;
 		valid = validMoves(state);
 		auto pair = evaluateState(state);
 		end = pair.first;
 		endVal = pair.second;
+		leaf = true;
 		for (int i = 0; i < 9; i++) {
 			N[i] = 0;
 			W[i] = 0;
 			Q[i] = 0;
 			P[i] = 0;
 		}
-		leaf = true;
+
+	}
+	~Node() {
+		for (int i = 0; i < 9; i++) {
+			if (children[i] != NULL) {
+				delete children[i];
+			}
+		}
 	}
 	// used for MCTS simulations
 	Node* chooseBest() {
@@ -100,7 +180,7 @@ public:
 		double totalVisits = 0;
 		for (int i = 0; i < 9; i++)
 			totalVisits += N[i];
-		double bestVal = -1; int bestMove = -1;
+		double bestVal = -2; int bestMove = -1;
 		for (int i = 0; i < 9; i++) {
 			if (valid[i]) {
 				double val = Q[i] + c_puct * P[i] * sqrt(totalVisits) / (1 + N[i]);
@@ -110,14 +190,18 @@ public:
 				}
 			}
 		}
+		if (bestMove == -1) {
+			cout << "Error: No best move found\n"; // Probabilities might be nan!
+			return nullptr;
+		}
 		return children[bestMove];
 	}
-	void expand(Vec prob) { // expands node, returns evaluation
+	void expand(Vec prob) { // expands node
 		if (!leaf) {
 			cout << "Error: tried to expand non-leaf node\n";
 			return;
 		}
-		if (prob.rows() != 10) {
+		if (prob.rows() != 10) { // the last element is the predicted state value, not part of the probability distribution
 			cout << "Error: probability vector size does not match\n";
 			return;
 		}
@@ -125,8 +209,9 @@ public:
 		for (int i = 0; i < 9; i++) {
 			if (valid[i]) {
 				Vec copy = state;
-				copy[i] = state[9];
-				copy[9] = -copy[9];
+				copy(i) = 1;
+				for (int j = 0; j < 9; j++)
+					copy(j) = -copy(j); // show next state from opponent's perspective
 				children[i] = new Node(copy, this);
 				P[i] = prob(i, 0);
 			}
@@ -143,12 +228,6 @@ public:
 			}
 		}
 	}
-	void destroy() { // to deallocate memory
-		for (int i = 0; i < 9; i++) {
-			children[i]->destroy();
-			delete children[i];
-		}
-	}
 	bool isLeaf() { return leaf; }
 	Node* getParent() { return parent; }
 	Vec getState() { return state; }
@@ -163,29 +242,55 @@ public:
 		for (int i = 0; i < 9; i++) {
 			v(i) = N[i] / sum;
 		}
+		v(9) = 0;
 		return v;
 	}
 	// used for game after simulations are complete
 	// based on visit counts
 	Node* chooseMove() {
+		if (leaf)
+			cout << "Error: choosing move from leaf node\n";
 		int next = choose(getProbDistribution());
-		// discard the rest of the game tree
-		for (int i = 0; i < 9; i++) {
-			if (i != next)
-				children[i]->destroy();
+		if (children[next] == NULL) {
+			cout << "Error: the move chosen is null\nVisit Counts: ";
+			for (int i = 0; i < 9; i++)
+				printf("%d ", N[i]);
+			printf("\nMove Chosen: %d\n", next);
 		}
 		return children[next];
 	}
+	void printDist() {
+		printf("Distribution: ");
+		for (int i = 0; i < 9; i++)
+			printf("%d ", N[i]);
+		printf("\nPrior Probabilities: ");
+		for (int i = 0; i < 9; i++)
+			printf("%lf ", P[i]);
+		printf("\nState: ");
+		for (int i = 0; i < 9; i++)
+			printf("%lf ", state(i));
+		printf("\nValid Moves: ");
+		for (int i = 0; i < 9; i++)
+			cout << valid[i] << " ";
+		printf("\n");
+	}
 };
 
-void Network2::simulate(Node* start) {
+void Network2::simulate(Node * const start) {
 	Node* current = start;
-	while (!current->isLeaf())
+	while (current != nullptr && !current->isLeaf())
 		current = current->chooseBest();
 	double v;
-	if (!current->isEndState()) {
+	if (current != nullptr && !current->isEndState()) {
 		Mat s = current->getState();
 		feedForward(s);
+		if (abs(s.sum() - s(s.rows() - 1) - 1) > 0.0001) {
+			cout << "Invalid probability distribution\n";
+			cout << s;
+			return;
+		}
+		if (isnan(s(0)))
+			cout << "NAN in simulation!\n";
 		v = s(9, 0);
 		current->expand(s);
 	}
@@ -198,11 +303,9 @@ void Network2::simulate(Node* start) {
 	}
 }
 
-Vec Network2::selfPlay() {
+void Network2::selfPlay(trbatch& trainingData) {
 	const int simulationsPerMove = 1000;
-	vector<Vec> trainingData;
-	Vec start = Vec::Zero(10);
-	start[9] = 1;
+	Vec start = Vec::Zero(9);
 	Node* current = new Node(start, nullptr);
 	while (!current->isEndState()) {
 		for (int i = 0; i < simulationsPerMove; i++)
@@ -210,19 +313,43 @@ Vec Network2::selfPlay() {
 		current = current->chooseMove();
 	}
 	int winner = current->getEndVal();
+	Node* prev = current;
+	current = current->getParent();
 	while (current != nullptr) {
-		Vec data = current->getProbDistribution();
-		data(10) = winner;
+		trdata data = make_pair(current->getState(), current->getProbDistribution());
+		data.second(9) = winner;
 		trainingData.push_back(data);
+		prev = current;
 		current = current->getParent();
 	}
-	int random = rand() % trainingData.size();
-	return trainingData[random];
+	delete prev;
 }
 
-void Network2::train(trbatch& data, trbatch& test, int numEpochs) {
-	for (int epoch = 1; epoch <= numEpochs; ++epoch)
+void printBoard(Vec s) {
+	if (s.rows() < 9) {
+		cout << "Error: state size too small when printing\n";
+		return;
+	}
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 3; j++) {
+			printf("%.2lf ", s(3 * i + j));
+		}
+		printf("\n");
+	}
+	if (s.rows() == 10) {
+		printf("Value: %.2lf\n", s(9));
+	}
+}
+
+void Network2::train(int iterations) {
+	ofstream fout;
+	const int gamesPerIteration = 100;
+	for (int i = 0; i < iterations; i++)
 	{
+		trbatch data;
+		for (int game = 0; game < gamesPerIteration; game++) {
+			selfPlay(data);
+		}
 		shuffle(data.begin(), data.end(), randGen);
 		Mat batch(in, miniBatchSize);
 		Mat answers(out, miniBatchSize);
@@ -230,8 +357,19 @@ void Network2::train(trbatch& data, trbatch& test, int numEpochs) {
 			batch.col(i % miniBatchSize) = data[i].first;
 			answers.col(i % miniBatchSize) = data[i].second;
 			if ((i + 1) % miniBatchSize == 0) {
-				// feedforward
+				if (i + 1 == miniBatchSize) {
+					cout << "\nSample state:\n";
+					printBoard(batch.col(0));
+				}
 				feedForward(batch);
+				if (i + 1 == miniBatchSize) {
+					cout << "\nPrediction:\n";
+					printBoard(batch.col(0));
+					cout << "\nAnswers:\n";
+					printBoard(answers.col(0));
+				}
+				if (isnan(batch(0, 0)))
+					cout << "NAN!\n";
 
 				// backpropagate error
 				Mat WTD;
@@ -241,29 +379,23 @@ void Network2::train(trbatch& data, trbatch& test, int numEpochs) {
 				}
 				// updates
 				for (int i = 0; i < numLayers; i++) {
-
 					layers[i]->updateBiasAndWeights(learnRate);
 				}
 				batch.resize(in, miniBatchSize);
 				answers.resize(out, miniBatchSize);
 			}
 		}
-		// evaluate progress
-		Mat testBatch(in, test.size());
-		Mat testAns(out, test.size());
-		for (int i = 0; i < test.size(); ++i) {
-			testBatch.col(i) = test[i].first;
-			testAns.col(i) = test[i].second;
-		}
-		feedForward(testBatch);
+		age++;
+		printf("\nAge: %d\n", age);
 
-		if (isnan(testBatch(0, 0)))
-		{
-			cout << "NAN!\n";
-			layers[1]->print();
+		fout.open("file.txt");
+		fout << *this;
+		fout.close();
+		if (age % 100 == 0) { // save record of progress every 100 iterations
+			fout.open("Iteration " + to_string(age) + ".txt");
+			fout << *this;
+			fout.close();
 		}
-
-		auto p = checker(testBatch, testAns);
-		printf("Epoch %d: %d out of %lu correct, average cost: %.3f\n", epoch, p.first, testBatch.cols(), p.second);
+		// check whether neural net has improved during the iteration
 	}
 }

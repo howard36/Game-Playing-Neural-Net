@@ -4,8 +4,6 @@
 #include "ActivationFunction.h"
 #include "Layer.h"
 
-
-
 template<typename ActivationFn>
 class FullyConnectedLayer : public Layer
 {
@@ -31,10 +29,12 @@ public:
 	std::pair<int, int> getSize();
 
 	void print();
-	
-// private: // methods
 
 	Mat costDeriv(const Mat& ans, const Mat& output);
+
+	friend Layer* read_FC(ifstream& fin);
+
+	void write(ofstream& fout);
 	
 private: // properties
 
@@ -78,3 +78,5 @@ private: // properties
 	std::normal_distribution<double> randDistribution;
 	
 };
+
+Layer* read_FC(ifstream& fin);

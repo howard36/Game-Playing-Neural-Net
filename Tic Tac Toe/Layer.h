@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Eigen/Dense>
 #include "Macros.h"
 
 // The layer interface. Is an abstract class
@@ -11,6 +10,7 @@ class Layer {
 public:
 
 	Layer();
+
 	virtual ~Layer()=0;
 
 	virtual void apply(Mat& input)=0;
@@ -27,4 +27,10 @@ public:
 	virtual std::pair<int, int> getSize()=0;
 
 	virtual void print()=0;
+
+	virtual void write(ofstream& fout)=0;
+
+	friend Layer* read(ifstream& fin);
 };
+
+Layer* read(ifstream& fin);
