@@ -7,10 +7,18 @@ using namespace std;
 // Network2::Network2(const std::vector<Layer>& _layers, const checker_type& ch, int mbs, double lr, double maxr, double minr, double L2, double m)
 
 Network2::Network2() {
-
 }
 
-Network2::Network2(const std::vector<Layer*>& _layers, const checker_type& ch, int _in, int _out, int mbs, double lr) {
+Network2::Network2(string _name) {
+	ifstream fin;
+	fin.open(_name + ".txt");
+	fin >> *this;
+	fin.close();
+	name = _name;
+}
+
+Network2::Network2(const string _name, const std::vector<Layer*>& _layers, const checker_type& ch, int _in, int _out, int mbs, double lr) {
+	name = _name;
 	layers = _layers;
 	checker = ch;
 	miniBatchSize = mbs;
@@ -25,6 +33,21 @@ Network2::Network2(const std::vector<Layer*>& _layers, const checker_type& ch, i
 	out = _out;
 }
 
+Network2::Network2(Network2& n) {
+	*this = n;
+}
+
+Network2& Network2::operator= (const Network2& n) {
+	ofstream fout; ifstream fin;
+	fout.open("Network Exchange.txt");
+	fout << n;
+	fout.close();
+	fin.open("Network Exchange.txt");
+	fin >> *this;
+	fin.close();
+	return *this;
+}
+
 Network2::~Network2() {
 	printf("In network2 destructor\n");
 	for (Layer* l : layers) {
@@ -34,8 +57,11 @@ Network2::~Network2() {
 }
 
 ifstream& operator>> (ifstream& fin, Network2& n) {
-	fin >> n.numLayers >> n.miniBatchSize >> n.learnRate >> n.age;
+	for (int i = 0; i < n.layers.size(); i++) {
+		delete n.layers[i];
+	}
 	n.layers.clear();
+	fin >> n.numLayers >> n.miniBatchSize >> n.learnRate >> n.age;
 	for (int i = 0; i < n.numLayers; i++) {
 		n.layers.push_back(read(fin));
 		if (n.layers[i] == NULL) {
@@ -47,7 +73,7 @@ ifstream& operator>> (ifstream& fin, Network2& n) {
 	return fin;
 }
 
-ofstream& operator<< (ofstream& fout, Network2& n) {
+ofstream& operator<< (ofstream& fout, const Network2& n) {
 	fout << n.numLayers << " " << n.miniBatchSize << " " << n.learnRate << " " << n.age << "\n";
 	for (int i = 0; i < n.numLayers; i++) {
 		n.layers[i]->write(fout);
@@ -57,7 +83,7 @@ ofstream& operator<< (ofstream& fout, Network2& n) {
 
 void Network2::setChecker(const checker_type& ch) { checker = ch; }
 
-void Network2::feedForward(Mat& input) {
+void Network2::feedForward(Mat& input) const {
 	for (int i = 0; i < numLayers; ++i)
 		layers[i]->apply(input);
 }
@@ -247,9 +273,7 @@ public:
 	}
 	// used for game after simulations are complete
 	// based on visit counts
-	Node* chooseMove() {
-		if (leaf)
-			cout << "Error: choosing move from leaf node\n";
+	int chooseMove() {
 		int next = choose(getProbDistribution());
 		if (children[next] == NULL) {
 			cout << "Error: the move chosen is null\nVisit Counts: ";
@@ -257,7 +281,12 @@ public:
 				printf("%d ", N[i]);
 			printf("\nMove Chosen: %d\n", next);
 		}
-		return children[next];
+		return next;
+	}
+	Node* chooseNewState() {
+		if (leaf)
+			cout << "Error: choosing move from leaf node\n";
+		return children[chooseMove()];
 	}
 	void printDist() {
 		printf("Distribution: ");
@@ -276,7 +305,7 @@ public:
 	}
 };
 
-void Network2::simulate(Node * const start) {
+void Network2::simulate(Node * const start) const {
 	Node* current = start;
 	while (current != nullptr && !current->isLeaf())
 		current = current->chooseBest();
@@ -303,6 +332,14 @@ void Network2::simulate(Node * const start) {
 	}
 }
 
+int Network2::selectMove(const Vec& state, int moves) const {
+	Vec start = state;
+	Node* current = new Node(start, nullptr);
+	for (int i = 0; i < moves; i++)
+		simulate(current);
+	return current->chooseMove();
+}
+
 void Network2::selfPlay(trbatch& trainingData) {
 	const int simulationsPerMove = 1000;
 	Vec start = Vec::Zero(9);
@@ -310,7 +347,7 @@ void Network2::selfPlay(trbatch& trainingData) {
 	while (!current->isEndState()) {
 		for (int i = 0; i < simulationsPerMove; i++)
 			simulate(current);
-		current = current->chooseMove();
+		current = current->chooseNewState();
 	}
 	int winner = current->getEndVal();
 	Node* prev = current;
@@ -323,6 +360,46 @@ void Network2::selfPlay(trbatch& trainingData) {
 		current = current->getParent();
 	}
 	delete prev;
+}
+
+const Network2& fight(const Network2& n1, const Network2& n2) {
+	const int simulationsPerFightMove = 10;
+	const int games = 100;
+	int win1 = 0, win2 = 0;
+	for (int i = 0; i < games; i++) {
+		Vec state = Vec::Zero(9);
+		int turn = 2 * (i % 2) - 1;
+		while (true) {
+			if (turn == 1) {
+				state(n1.selectMove(state, simulationsPerFightMove)) = turn;
+			}
+			else {
+				state(n2.selectMove(-state, simulationsPerFightMove)) = turn;
+			}
+			auto pair = evaluateState(state);
+			if (pair.first) {
+				if (pair.second != 0) {
+					if (pair.second*turn < 0) {
+						cout << "Error: Impossible for to win game on opponent's turn\n";
+						break;
+					}
+					if (turn == 1)
+						win1++;
+					else
+						win2++;
+				}
+				break;
+			}
+			turn = -turn;
+		}
+	}
+	cout << "Network Fight: " << win1 << " to " << win2 << "\n";
+	if (win1 > win2) {
+		return n1;
+	}
+	else {
+		return n2;
+	}
 }
 
 void printBoard(Vec s) {
@@ -346,6 +423,7 @@ void Network2::train(int iterations) {
 	const int gamesPerIteration = 100;
 	for (int i = 0; i < iterations; i++)
 	{
+		Network2 before(*this); // the state of the network before this iteration
 		trbatch data;
 		for (int game = 0; game < gamesPerIteration; game++) {
 			selfPlay(data);
@@ -385,17 +463,20 @@ void Network2::train(int iterations) {
 				answers.resize(out, miniBatchSize);
 			}
 		}
-		age++;
-		printf("\nAge: %d\n", age);
 
-		fout.open("file.txt");
+		// check whether neural net has improved during the iteration
+		*this = fight(*this, before);
+
+		fout.open(name + ".txt");
 		fout << *this;
 		fout.close();
 		if (age % 100 == 0) { // save record of progress every 100 iterations
-			fout.open("Iteration " + to_string(age) + ".txt");
+			fout.open(name+" at iteration " + to_string(age) + ".txt");
 			fout << *this;
 			fout.close();
 		}
-		// check whether neural net has improved during the iteration
+
+		age++;
+		printf("\nAge: %d\n", age);
 	}
 }
