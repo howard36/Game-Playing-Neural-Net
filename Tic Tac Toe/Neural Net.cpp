@@ -362,7 +362,7 @@ int Network2::selectMove(const Vec& state, int moves) const {
 }
 
 void Network2::selfPlay(trbatch& trainingData) {
-	const int simulationsPerMove = 100;
+	const int simulationsPerMove = 10000;
 	Vec start = Vec::Zero(9);
 	Node* current = new Node(start, nullptr);
 	while (!current->isEndState()) {
@@ -384,8 +384,9 @@ void Network2::selfPlay(trbatch& trainingData) {
 }
 
 const Network2& fight(const Network2& n1, const Network2& n2) {
+	cout << "Fight Result: ";
 	const int simulationsPerFightMove = 100;
-	const int games = 50;
+	const int games = 100;
 	int win1 = 0, win2 = 0;
 	for (int i = 0; i < games; i++) {
 		Vec state = Vec::Zero(9);
@@ -412,7 +413,7 @@ const Network2& fight(const Network2& n1, const Network2& n2) {
 			turn = -turn;
 		}
 	}
-	cout << "Fight result: " << win1 << " to " << win2 << "\n";
+	cout << win1 << " to " << win2 << "\n";
 	if (win1 > win2)
 		return n1;
 	else
@@ -438,7 +439,7 @@ void printBoard(Vec s) {
 void Network2::train(int iterations) {
 	bool showSample = false;
 	ofstream fout;
-	const int gamesPerIteration = 100;
+	const int gamesPerIteration = 200;
 	Network2 before;
 	for (int i = 0; i < iterations; i++)
 	{
@@ -501,8 +502,8 @@ void Network2::train(int iterations) {
 }
 
 void Network2::play() {
-	const int simulationsPerGameMove = 100;
-	int keepPlaying = 1, first;
+	const int simulationsPerGameMove = 1000;
+	int keepPlaying, first;
 	do {
 		cout << "Do you want to go first? (Enter 0 or 1) ";
 		cin >> first;
