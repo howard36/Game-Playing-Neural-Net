@@ -22,6 +22,8 @@ public:
 //	void train(trbatch& data, trbatch& test, int numEpochs);
 	void train(int iterations);
 
+	void play();
+
 	void feedForward(Mat& input) const; // pass by reference. input layer will output as output layer
 
 	friend ifstream& operator>> (ifstream& fin, Network2& n);
@@ -58,17 +60,19 @@ private:
 	string name;
 
 	// how quickly it learns
-	double learnRate, maxRate, minRate;
+	double learnRate;
+	
+//	double maxRate, minRate;
 
 	// how much L2regularization affects cost
 	// if high, it will focus on keeping weights low
 	// if low, it will focus on minimizing regular cost function
-	double L2;
+//	double L2;
 
-	double momentum;
+//	double momentum;
 
 	// to track progress
-	double maxfrac = 0;
+//	double maxfrac = 0;
 
 	// random device class instance, source of 'true' randomness for initializing random seed
 	std::random_device randDev;

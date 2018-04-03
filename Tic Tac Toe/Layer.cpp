@@ -5,7 +5,7 @@
 Layer::Layer() {}
 
 Layer::~Layer(){
-	printf("destroying layer\n");
+//	printf("destroying layer\n");
 }
 
 Layer* read(ifstream& fin) {

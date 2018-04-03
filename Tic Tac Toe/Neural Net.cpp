@@ -7,6 +7,7 @@ using namespace std;
 // Network2::Network2(const std::vector<Layer>& _layers, const checker_type& ch, int mbs, double lr, double maxr, double minr, double L2, double m)
 
 Network2::Network2() {
+	randGen = mt19937(randDev());
 }
 
 Network2::Network2(string _name) {
@@ -15,6 +16,7 @@ Network2::Network2(string _name) {
 	fin >> *this;
 	fin.close();
 	name = _name;
+	randGen = mt19937(randDev());
 }
 
 Network2::Network2(const string _name, const std::vector<Layer*>& _layers, const checker_type& ch, int _in, int _out, int mbs, double lr) {
@@ -38,18 +40,26 @@ Network2::Network2(Network2& n) {
 }
 
 Network2& Network2::operator= (const Network2& n) {
-	ofstream fout; ifstream fin;
-	fout.open("Network Exchange.txt");
-	fout << n;
-	fout.close();
-	fin.open("Network Exchange.txt");
-	fin >> *this;
-	fin.close();
+	if (this == &n)
+		return *this;
+	for (int i = 0; i < layers.size(); i++) {
+		delete layers[i];
+	}
+	layers.clear();
+	for (int i = 0; i < n.numLayers; i++)
+		layers.push_back(n.layers[i]->copy());
+	numLayers = n.numLayers;
+	in = n.in; out = n.out;
+	name = n.name;
+	age = n.age;
+	miniBatchSize = n.miniBatchSize;
+	learnRate = n.learnRate;
+	checker = n.checker; // is this neccessary?
 	return *this;
 }
 
 Network2::~Network2() {
-	printf("In network2 destructor\n");
+//	printf("In network2 destructor\n");
 	for (Layer* l : layers) {
 		if (l != NULL) delete l;
 		l = NULL;
@@ -173,8 +183,9 @@ private:
 
 public:
 	Node(Vec s, Node* p) {
-		if (s.rows() != 9)
+		if (s.rows() != 9) {
 			cout << "Error: node initialized with invalid state\n";
+		}
 		state = s;
 		parent = p;
 		valid = validMoves(state);
@@ -183,12 +194,12 @@ public:
 		endVal = pair.second;
 		leaf = true;
 		for (int i = 0; i < 9; i++) {
+			children[i] = nullptr;
 			N[i] = 0;
 			W[i] = 0;
 			Q[i] = 0;
 			P[i] = 0;
 		}
-
 	}
 	~Node() {
 		for (int i = 0; i < 9; i++) {
@@ -236,13 +247,13 @@ public:
 			if (valid[i]) {
 				Vec copy = state;
 				copy(i) = 1;
-				for (int j = 0; j < 9; j++)
-					copy(j) = -copy(j); // show next state from opponent's perspective
+				copy = -copy;
 				children[i] = new Node(copy, this);
-				P[i] = prob(i, 0);
+				P[i] = prob(i);
 			}
-			else
+			else {
 				children[i] = nullptr;
+			}
 		}
 	}
 	void update(double v, Node* child) {
@@ -305,21 +316,30 @@ public:
 	}
 };
 
-void Network2::simulate(Node * const start) const {
+void Network2::simulate(Node* const start) const {
 	Node* current = start;
-	while (current != nullptr && !current->isLeaf())
+	while (!current->isLeaf()) {
 		current = current->chooseBest();
+		if (current == NULL) {
+			cout << "Error: current is nullptr in simulation\n";
+			return; // end simulation early
+		}
+	}
 	double v;
-	if (current != nullptr && !current->isEndState()) {
+	if (!current->isEndState()) {
 		Mat s = current->getState();
 		feedForward(s);
 		if (abs(s.sum() - s(s.rows() - 1) - 1) > 0.0001) {
-			cout << "Invalid probability distribution\n";
+			cout << "Invalid probability distribution:\n";
 			cout << s;
 			return;
 		}
-		if (isnan(s(0)))
-			cout << "NAN in simulation!\n";
+		for (int i = 0; i < 10; i++) {
+			if (isnan(s(i))) {
+				cout << "Error: Neural net output has nan! Output:\n";
+				cout << s;
+			}
+		}
 		v = s(9, 0);
 		current->expand(s);
 	}
@@ -333,15 +353,16 @@ void Network2::simulate(Node * const start) const {
 }
 
 int Network2::selectMove(const Vec& state, int moves) const {
-	Vec start = state;
-	Node* current = new Node(start, nullptr);
+	Node* current = new Node(state, nullptr);
 	for (int i = 0; i < moves; i++)
 		simulate(current);
-	return current->chooseMove();
+	int move = current->chooseMove();
+	delete current;
+	return move;
 }
 
 void Network2::selfPlay(trbatch& trainingData) {
-	const int simulationsPerMove = 1000;
+	const int simulationsPerMove = 100;
 	Vec start = Vec::Zero(9);
 	Node* current = new Node(start, nullptr);
 	while (!current->isEndState()) {
@@ -363,19 +384,17 @@ void Network2::selfPlay(trbatch& trainingData) {
 }
 
 const Network2& fight(const Network2& n1, const Network2& n2) {
-	const int simulationsPerFightMove = 10;
-	const int games = 100;
+	const int simulationsPerFightMove = 100;
+	const int games = 50;
 	int win1 = 0, win2 = 0;
 	for (int i = 0; i < games; i++) {
 		Vec state = Vec::Zero(9);
 		int turn = 2 * (i % 2) - 1;
 		while (true) {
-			if (turn == 1) {
+			if (turn == 1)
 				state(n1.selectMove(state, simulationsPerFightMove)) = turn;
-			}
-			else {
+			else
 				state(n2.selectMove(-state, simulationsPerFightMove)) = turn;
-			}
 			auto pair = evaluateState(state);
 			if (pair.first) {
 				if (pair.second != 0) {
@@ -393,13 +412,11 @@ const Network2& fight(const Network2& n1, const Network2& n2) {
 			turn = -turn;
 		}
 	}
-	cout << "Network Fight: " << win1 << " to " << win2 << "\n";
-	if (win1 > win2) {
+	cout << "Fight result: " << win1 << " to " << win2 << "\n";
+	if (win1 > win2)
 		return n1;
-	}
-	else {
+	else
 		return n2;
-	}
 }
 
 void printBoard(Vec s) {
@@ -419,11 +436,13 @@ void printBoard(Vec s) {
 }
 
 void Network2::train(int iterations) {
+	bool showSample = false;
 	ofstream fout;
 	const int gamesPerIteration = 100;
+	Network2 before;
 	for (int i = 0; i < iterations; i++)
 	{
-		Network2 before(*this); // the state of the network before this iteration
+		before = *this; // the state of the network before this iteration
 		trbatch data;
 		for (int game = 0; game < gamesPerIteration; game++) {
 			selfPlay(data);
@@ -435,12 +454,12 @@ void Network2::train(int iterations) {
 			batch.col(i % miniBatchSize) = data[i].first;
 			answers.col(i % miniBatchSize) = data[i].second;
 			if ((i + 1) % miniBatchSize == 0) {
-				if (i + 1 == miniBatchSize) {
+				if (showSample && i + 1 == miniBatchSize) {
 					cout << "\nSample state:\n";
 					printBoard(batch.col(0));
 				}
 				feedForward(batch);
-				if (i + 1 == miniBatchSize) {
+				if (showSample && i + 1 == miniBatchSize) {
 					cout << "\nPrediction:\n";
 					printBoard(batch.col(0));
 					cout << "\nAnswers:\n";
@@ -467,6 +486,9 @@ void Network2::train(int iterations) {
 		// check whether neural net has improved during the iteration
 		*this = fight(*this, before);
 
+		age++;
+		printf("Age: %d\n", age);
+
 		fout.open(name + ".txt");
 		fout << *this;
 		fout.close();
@@ -475,8 +497,49 @@ void Network2::train(int iterations) {
 			fout << *this;
 			fout.close();
 		}
-
-		age++;
-		printf("\nAge: %d\n", age);
 	}
+}
+
+void Network2::play() {
+	const int simulationsPerGameMove = 100;
+	int keepPlaying = 1, first;
+	do {
+		cout << "Do you want to go first? (Enter 0 or 1) ";
+		cin >> first;
+		int turn = 2 * first - 1, move;
+		Vec state = Vec::Zero(9);
+		while (true) {
+			if (turn == 1) { // Human Turn
+				printBoard(state);
+				cout << "Your Move: ";
+				cin >> move;
+				state(move) = 1;
+			}
+			else { // Computer Turn
+				move = selectMove(-state, simulationsPerGameMove);
+				state(move) = -1;
+				cout << "Computer's Move: " << move << "\n";
+			}
+			auto pair = evaluateState(state);
+			if (pair.first) {
+				if (pair.second != 0) {
+					if (pair.second*turn < 0) {
+						cout << "Error: Impossible for to win game on opponent's turn\n";
+						break;
+					}
+					if (turn == 1)
+						cout << "You won\n";
+					else
+						cout << "Computer won\n";
+				}
+				else
+					cout << "Tie\n";
+				printBoard(state);
+				break;
+			}
+			turn = -turn;
+		}
+		cout << "Do you want to play again? (Enter 0 or 1) ";
+		cin >> keepPlaying;
+	} while (keepPlaying);
 }

@@ -1,9 +1,10 @@
-﻿  FullyConnectedLayer.cpp
-c:\users\howard halim\documents\programs\projects\neural-net-tic-tac-toe\tic tac toe\fullyconnectedlayer.cpp(19): warning C4244: 'argument': conversion from '__int64' to 'unsigned int', possible loss of data
-  c:\users\howard halim\documents\programs\projects\neural-net-tic-tac-toe\tic tac toe\fullyconnectedlayer.cpp(14): note: while compiling class template member function 'FullyConnectedLayer<SigmoidActivationFunction>::FullyConnectedLayer(int,int)'
-  c:\users\howard halim\documents\programs\projects\neural-net-tic-tac-toe\tic tac toe\fullyconnectedlayer.cpp(102): note: see reference to function template instantiation 'FullyConnectedLayer<SigmoidActivationFunction>::FullyConnectedLayer(int,int)' being compiled
-  c:\users\howard halim\documents\programs\projects\neural-net-tic-tac-toe\tic tac toe\fullyconnectedlayer.cpp(102): note: see reference to class template instantiation 'FullyConnectedLayer<SigmoidActivationFunction>' being compiled
-  Layer.cpp
+﻿  Neural Net.cpp
+c:\users\howard halim\documents\programs\projects\neural-net-tic-tac-toe\tic tac toe\neural net.cpp(60): warning C4018: '<': signed/unsigned mismatch
+c:\users\howard halim\documents\programs\projects\neural-net-tic-tac-toe\tic tac toe\neural net.cpp(374): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+c:\users\howard halim\documents\programs\projects\neural-net-tic-tac-toe\tic tac toe\neural net.cpp(461): warning C4018: '<': signed/unsigned mismatch
+  Tic Tac Toe.cpp
+c:\users\howard halim\documents\programs\projects\neural-net-tic-tac-toe\tic tac toe\tic tac toe.cpp(28): warning C4244: 'argument': conversion from 'double' to 'Eigen::Index', possible loss of data
+c:\users\howard halim\documents\programs\projects\neural-net-tic-tac-toe\tic tac toe\tic tac toe.cpp(31): warning C4244: 'argument': conversion from 'double' to 'Eigen::Index', possible loss of data
+c:\users\howard halim\documents\programs\projects\neural-net-tic-tac-toe\tic tac toe\tic tac toe.cpp(192): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
   Generating Code...
-c:\users\howard halim\documents\programs\projects\neural-net-tic-tac-toe\tic tac toe\fullyconnectedlayer.cpp(149): warning C4715: 'read_FC': not all control paths return a value
   Tic Tac Toe.vcxproj -> C:\Users\Howard Halim\Documents\Programs\Projects\Neural-Net-Tic-Tac-Toe\Tic Tac Toe\Debug\Tic Tac Toe.exe

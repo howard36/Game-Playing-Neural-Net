@@ -11,6 +11,7 @@ class FullyConnectedLayer : public Layer
 public:
 	FullyConnectedLayer();
 	FullyConnectedLayer(int _in, int _out);
+	FullyConnectedLayer(int _in, int _out, const Mat& _weights, const Vec& _biases);
 
 	~FullyConnectedLayer();
 
@@ -33,6 +34,8 @@ public:
 	Mat costDeriv(const Mat& ans, const Mat& output);
 
 	friend Layer* read_FC(ifstream& fin);
+
+	Layer* copy();
 
 	void write(ofstream& fout);
 	
@@ -63,7 +66,6 @@ private: // properties
 	Mat derivs;
 
 	// the error from the actual answer, used for backpropagation
-	// it's an o
 	Mat delta;
 	
 	// Random stuff 

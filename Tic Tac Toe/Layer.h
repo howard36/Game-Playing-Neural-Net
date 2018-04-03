@@ -30,6 +30,8 @@ public:
 
 	virtual void write(ofstream& fout)=0;
 
+	virtual Layer* copy()=0;
+
 	friend Layer* read(ifstream& fin);
 };
 

@@ -32,10 +32,21 @@ FullyConnectedLayer<ActivationFn>::FullyConnectedLayer(int _in, int _out) {
 	}
 }
 
+FC_LAYER_TEMPLATE
+FullyConnectedLayer<ActivationFn>::FullyConnectedLayer(int _in, int _out, const Mat& _weights, const Vec& _biases) {
+	in = _in;
+	out = _out;
+	weights = _weights;
+	biases = _biases;
+	if (weights.rows() != out || weights.cols() != in || biases.rows() != out) {
+		cout << "Error: Invalid dimensions for weights and biases in FC Layer constructor\n";
+	}
+}
+
 // destructor
 FC_LAYER_TEMPLATE
 FullyConnectedLayer<ActivationFn>::~FullyConnectedLayer(){
-	printf("FullyConnectedLayer destructor called\n");
+//	printf("FullyConnectedLayer destructor called\n");
 }
 
 FC_LAYER_TEMPLATE
@@ -87,6 +98,26 @@ void FullyConnectedLayer<ActivationFn>::print()
 
 FC_LAYER_TEMPLATE
 inline pair<int, int> FullyConnectedLayer<ActivationFn>::getSize() { return make_pair(in, out); }
+
+FC_LAYER_TEMPLATE
+Layer* FullyConnectedLayer<ActivationFn>::copy() {
+	if (ActivationFn::id() == 1) {
+		return new FullyConnectedLayer<SigmoidActivationFunction>(in, out, weights, biases);
+	}
+	else if (ActivationFn::id() == 2) {
+		return new FullyConnectedLayer<TanhActivationFunction>(in, out, weights, biases);
+	}
+	else if (ActivationFn::id() == 3) {
+		return new FullyConnectedLayer<SoftMaxActivationFunction>(in, out, weights, biases);
+	}
+	else if (ActivationFn::id() == 4) {
+		return new FullyConnectedLayer<CustomActivationFunction>(in, out, weights, biases);
+	}
+	else {
+		cout << "Error: invalid activation id when copying layer\n";
+		return nullptr;
+	}
+}
 
 FC_LAYER_TEMPLATE
 void FullyConnectedLayer<ActivationFn>::write(ofstream& fout) {
