@@ -179,7 +179,7 @@ private:
 	bool leaf; // whether this is currently a leaf node in the game tree
 	bool end; // whether this is an ending state
 	double endVal; // the winner (if it is an end state)
-	const double c_puct = 0.01; // change?
+	const double c_puct = 0.5; // change?
 
 public:
 	Node(Vec s, Node* p) {
@@ -220,7 +220,9 @@ public:
 		double bestVal = -2; int bestMove = -1;
 		for (int i = 0; i < 9; i++) {
 			if (valid[i]) {
-				double val = Q[i] + c_puct * P[i] * sqrt(totalVisits) / (1 + N[i]);
+				double val = Q[i] + 0.01 * P[i] * sqrt(totalVisits) / (1 + N[i]);
+//				double val = Q[i] + c_puct * P[i] * sqrt(totalVisits / (1 + N[i]));
+//				double val = Q[i] + 0.2*P[i] + 0.2 * sqrt(totalVisits) / (1 + N[i]);;
 				if (val > bestVal) {
 					bestVal = val;
 					bestMove = i;
@@ -329,7 +331,7 @@ void Network2::simulate(Node* const start) const {
 	if (!current->isEndState()) {
 		Mat s = current->getState();
 		feedForward(s);
-		if (abs(s.sum() - s(s.rows() - 1) - 1) > 0.0001) {
+		if (abs(s.sum() - s(s.rows() - 1, 0) - 1) > 0.0001) {
 			cout << "Invalid probability distribution:\n";
 			cout << s;
 			return;
@@ -347,6 +349,7 @@ void Network2::simulate(Node* const start) const {
 		v = current->getEndVal();
 	}
 	while (current != start) {
+		v = -v;
 		(current->getParent())->update(v, current);
 		current = current->getParent();
 	}
@@ -362,7 +365,7 @@ int Network2::selectMove(const Vec& state, int moves) const {
 }
 
 void Network2::selfPlay(trbatch& trainingData) {
-	const int simulationsPerMove = 10000;
+	const int simulationsPerMove = 100;
 	Vec start = Vec::Zero(9);
 	Node* current = new Node(start, nullptr);
 	while (!current->isEndState()) {
@@ -375,6 +378,7 @@ void Network2::selfPlay(trbatch& trainingData) {
 	current = current->getParent();
 	while (current != nullptr) {
 		trdata data = make_pair(current->getState(), current->getProbDistribution());
+		winner = -winner;
 		data.second(9) = winner;
 		trainingData.push_back(data);
 		prev = current;
@@ -420,14 +424,17 @@ const Network2& fight(const Network2& n1, const Network2& n2) {
 		return n2;
 }
 
-void printBoard(Vec s) {
+void printBoard(Vec s, bool ints) {
 	if (s.rows() < 9) {
 		cout << "Error: state size too small when printing\n";
 		return;
 	}
 	for (int i = 0; i < 3; i++) {
 		for (int j = 0; j < 3; j++) {
-			printf("%.2lf ", s(3 * i + j));
+			if (ints)
+				printf("%d ", (int)s(3 * i + j));
+			else
+				printf("%.2lf ", s(3 * i + j));
 		}
 		printf("\n");
 	}
@@ -437,9 +444,9 @@ void printBoard(Vec s) {
 }
 
 void Network2::train(int iterations) {
-	bool showSample = false;
+	bool showSample = true;
 	ofstream fout;
-	const int gamesPerIteration = 200;
+	const int gamesPerIteration = 1000;
 	Network2 before;
 	for (int i = 0; i < iterations; i++)
 	{
@@ -457,14 +464,14 @@ void Network2::train(int iterations) {
 			if ((i + 1) % miniBatchSize == 0) {
 				if (showSample && i + 1 == miniBatchSize) {
 					cout << "\nSample state:\n";
-					printBoard(batch.col(0));
+					printBoard(batch.col(0), true);
 				}
 				feedForward(batch);
 				if (showSample && i + 1 == miniBatchSize) {
 					cout << "\nPrediction:\n";
-					printBoard(batch.col(0));
+					printBoard(batch.col(0), false);
 					cout << "\nAnswers:\n";
-					printBoard(answers.col(0));
+					printBoard(answers.col(0), false);
 				}
 				if (isnan(batch(0, 0)))
 					cout << "NAN!\n";
@@ -502,7 +509,7 @@ void Network2::train(int iterations) {
 }
 
 void Network2::play() {
-	const int simulationsPerGameMove = 1000;
+	const int simulationsPerGameMove = 100;
 	int keepPlaying, first;
 	do {
 		cout << "Do you want to go first? (Enter 0 or 1) ";
@@ -511,7 +518,7 @@ void Network2::play() {
 		Vec state = Vec::Zero(9);
 		while (true) {
 			if (turn == 1) { // Human Turn
-				printBoard(state);
+				printBoard(state, true);
 				cout << "Your Move: ";
 				cin >> move;
 				state(move) = 1;
@@ -535,7 +542,7 @@ void Network2::play() {
 				}
 				else
 					cout << "Tie\n";
-				printBoard(state);
+				printBoard(state, true);
 				break;
 			}
 			turn = -turn;
