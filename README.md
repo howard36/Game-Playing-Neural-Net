@@ -1,2 +1,1 @@
-# Neural-Net-Tic-Tac-Toe
-Training a neural network to play tic tac toe.
+This is a neural net that plays Tic Tac Toe and Connect Four. 
