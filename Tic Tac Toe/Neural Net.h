@@ -43,7 +43,7 @@ private:
 
 	void simulate(Node * const start) const; // go down the MCTS tree, based on moves chosen by the neural net
 
-	int selectMove(const Vec& state, int moves) const;
+	int selectMove(const State& s, int moves) const;
 	
 	// properties
 	checker_type checker;

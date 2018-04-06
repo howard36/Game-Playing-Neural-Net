@@ -1,8 +1,7 @@
 #include "Macros.h"
 #include "Neural Net.h"
 #include "FullyConnectedLayer.h"
-
-using namespace std;
+#include "Node.h"
 
 // Network2::Network2(const std::vector<Layer>& _layers, const checker_type& ch, int mbs, double lr, double maxr, double minr, double L2, double m)
 
@@ -96,227 +95,9 @@ void Network2::setChecker(const checker_type& ch) { checker = ch; }
 void Network2::feedForward(Mat& input) const {
 	for (int i = 0; i < numLayers; ++i)
 		layers[i]->apply(input);
+	if (input.rows() != out)
+		cout << "Error: network output size is incorrect\n";
 }
-
-vector<bool> validMoves(Vec state) {
-	vector<bool> v(9, false);
-	for (int i = 0; i < 9; i++) {
-		if (state(i) == 0) {
-			v[i] = true;
-		}
-	}
-	return v;
-}
-
-int choose(Vec distribution) {
-	if (distribution.size() != 10) {
-		cout << "Error: distribution size does not match\n";
-	}
-	if (abs(distribution.sum() - distribution(9) - 1) > 0.0001) {
-		cout << "Error: probabilities do not add up to 1\n";
-		cout << distribution;
-	}
-	double num = (double)rand() / RAND_MAX;
-	for (int i = 0; i < 9; i++) {
-		if (num < distribution(i)) {
-			return i;
-		}
-		num -= distribution(i);
-	}
-	// if no random move has been chosen yet (which happens rarely), it chooses the one with greatest probability
-	double bestProb = 0; int bestMove = -1;
-	for (int i = 0; i < 9; i++) {
-		if (distribution(i) > bestProb) {
-			bestProb = distribution(i);
-			bestMove = i;
-		}
-	}
-	return bestMove;
-}
-
-// decides whether the state is an end state, and if so, who the winner is
-// specialized for the game of tic tac toe
-pair<bool, double> evaluateState(Vec state) {
-	// check for 3 in a rows
-	for (int i = 0; i < 3; i++) {
-		if (state(3 * i) == state(3 * i + 1) && state(3 * i + 1) == state(3 * i + 2)) {
-			if (state(3 * i) != 0)
-				return make_pair(true, state(3 * i));
-		}
-		if (state(i) == state(i + 3) && state(i + 3) == state(i + 6)) {
-			if (state(i) != 0)
-				return make_pair(true, state(i));
-		}
-	}
-	if (state(0) == state(4) && state(4) == state(8)) {
-		if (state(0) != 0)
-			return make_pair(true, state(0));
-	}
-	if (state(2) == state(4) && state(4) == state(6)) {
-		if (state(2) != 0)
-			return make_pair(true, state(2));
-	}
-	// no 3 in a rows found
-	for (int i = 0; i < 9; i++) {
-		if (state(i) == 0) // available move
-			return make_pair(false, 0);
-	}
-	return make_pair(true, 0); // tie
-}
-
-// move to new file
-class Node
-{
-private:
-	Node* children[9];
-	Node* parent;
-	Vec state;
-	vector<bool> valid; // whether a move is valid
-	int N[9]; // visit count
-	double W[9]; // total action value
-	double Q[9]; // mean action value
-	double P[9]; // prior probability
-	bool leaf; // whether this is currently a leaf node in the game tree
-	bool end; // whether this is an ending state
-	double endVal; // the winner (if it is an end state)
-	const double c_puct = 0.5; // change?
-
-public:
-	Node(Vec s, Node* p) {
-		if (s.rows() != 9) {
-			cout << "Error: node initialized with invalid state\n";
-		}
-		state = s;
-		parent = p;
-		valid = validMoves(state);
-		auto pair = evaluateState(state);
-		end = pair.first;
-		endVal = pair.second;
-		leaf = true;
-		for (int i = 0; i < 9; i++) {
-			children[i] = nullptr;
-			N[i] = 0;
-			W[i] = 0;
-			Q[i] = 0;
-			P[i] = 0;
-		}
-	}
-	~Node() {
-		for (int i = 0; i < 9; i++) {
-			if (children[i] != NULL) {
-				delete children[i];
-			}
-		}
-	}
-	// used for MCTS simulations
-	Node* chooseBest() {
-		if (leaf) {
-			cout << "Error: choosing from leaf node\n";
-			return nullptr;
-		}
-		double totalVisits = 0;
-		for (int i = 0; i < 9; i++)
-			totalVisits += N[i];
-		double bestVal = -2; int bestMove = -1;
-		for (int i = 0; i < 9; i++) {
-			if (valid[i]) {
-				double val = Q[i] + 0.01 * P[i] * sqrt(totalVisits) / (1 + N[i]);
-//				double val = Q[i] + c_puct * P[i] * sqrt(totalVisits / (1 + N[i]));
-//				double val = Q[i] + 0.2*P[i] + 0.2 * sqrt(totalVisits) / (1 + N[i]);;
-				if (val > bestVal) {
-					bestVal = val;
-					bestMove = i;
-				}
-			}
-		}
-		if (bestMove == -1) {
-			cout << "Error: No best move found\n"; // Probabilities might be nan!
-			return nullptr;
-		}
-		return children[bestMove];
-	}
-	void expand(Vec prob) { // expands node
-		if (!leaf) {
-			cout << "Error: tried to expand non-leaf node\n";
-			return;
-		}
-		if (prob.rows() != 10) { // the last element is the predicted state value, not part of the probability distribution
-			cout << "Error: probability vector size does not match\n";
-			return;
-		}
-		leaf = false;
-		for (int i = 0; i < 9; i++) {
-			if (valid[i]) {
-				Vec copy = state;
-				copy(i) = 1;
-				copy = -copy;
-				children[i] = new Node(copy, this);
-				P[i] = prob(i);
-			}
-			else {
-				children[i] = nullptr;
-			}
-		}
-	}
-	void update(double v, Node* child) {
-		for (int i = 0; i < 9; i++) {
-			if (children[i] == child) {
-				N[i]++;
-				W[i] += v;
-				Q[i] = W[i] / N[i];
-			}
-		}
-	}
-	bool isLeaf() { return leaf; }
-	Node* getParent() { return parent; }
-	Vec getState() { return state; }
-	bool isEndState() { return end; }
-	double getEndVal() { return endVal; }
-	Vec getProbDistribution() {
-		Vec v(10); // last element is reserved for game winner, which is added later
-		double sum = 0;
-		for (int i = 0; i < 9; i++) {
-			sum += N[i];
-		}
-		for (int i = 0; i < 9; i++) {
-			v(i) = N[i] / sum;
-		}
-		v(9) = 0;
-		return v;
-	}
-	// used for game after simulations are complete
-	// based on visit counts
-	int chooseMove() {
-		int next = choose(getProbDistribution());
-		if (children[next] == NULL) {
-			cout << "Error: the move chosen is null\nVisit Counts: ";
-			for (int i = 0; i < 9; i++)
-				printf("%d ", N[i]);
-			printf("\nMove Chosen: %d\n", next);
-		}
-		return next;
-	}
-	Node* chooseNewState() {
-		if (leaf)
-			cout << "Error: choosing move from leaf node\n";
-		return children[chooseMove()];
-	}
-	void printDist() {
-		printf("Distribution: ");
-		for (int i = 0; i < 9; i++)
-			printf("%d ", N[i]);
-		printf("\nPrior Probabilities: ");
-		for (int i = 0; i < 9; i++)
-			printf("%lf ", P[i]);
-		printf("\nState: ");
-		for (int i = 0; i < 9; i++)
-			printf("%lf ", state(i));
-		printf("\nValid Moves: ");
-		for (int i = 0; i < 9; i++)
-			cout << valid[i] << " ";
-		printf("\n");
-	}
-};
 
 void Network2::simulate(Node* const start) const {
 	Node* current = start;
@@ -336,13 +117,13 @@ void Network2::simulate(Node* const start) const {
 			cout << s;
 			return;
 		}
-		for (int i = 0; i < 10; i++) {
+		for (int i = 0; i < maxMoves+1; i++) {
 			if (isnan(s(i))) {
 				cout << "Error: Neural net output has nan! Output:\n";
 				cout << s;
 			}
 		}
-		v = s(9, 0);
+		v = s(maxMoves, 0);
 		current->expand(s);
 	}
 	else {
@@ -355,8 +136,8 @@ void Network2::simulate(Node* const start) const {
 	}
 }
 
-int Network2::selectMove(const Vec& state, int moves) const {
-	Node* current = new Node(state, nullptr);
+int Network2::selectMove(const State& s, int moves) const {
+	Node* current = new Node(s, nullptr);
 	for (int i = 0; i < moves; i++)
 		simulate(current);
 	int move = current->chooseMove();
@@ -366,7 +147,7 @@ int Network2::selectMove(const Vec& state, int moves) const {
 
 void Network2::selfPlay(trbatch& trainingData) {
 	const int simulationsPerMove = 100;
-	Vec start = Vec::Zero(9);
+	State start = startState;
 	Node* current = new Node(start, nullptr);
 	while (!current->isEndState()) {
 		for (int i = 0; i < simulationsPerMove; i++)
@@ -379,7 +160,7 @@ void Network2::selfPlay(trbatch& trainingData) {
 	while (current != nullptr) {
 		trdata data = make_pair(current->getState(), current->getProbDistribution());
 		winner = -winner;
-		data.second(9) = winner;
+		data.second(maxMoves) = winner;
 		trainingData.push_back(data);
 		prev = current;
 		current = current->getParent();
@@ -389,31 +170,33 @@ void Network2::selfPlay(trbatch& trainingData) {
 
 const Network2& fight(const Network2& n1, const Network2& n2) {
 	cout << "Fight Result: ";
-	const int simulationsPerFightMove = 100;
-	const int games = 100;
+	const int simulationsPerFightMove = 50;
+	const int games = 20;
 	int win1 = 0, win2 = 0;
 	for (int i = 0; i < games; i++) {
-		Vec state = Vec::Zero(9);
+		State state = startState;
 		int turn = 2 * (i % 2) - 1;
 		while (true) {
+			int move;
 			if (turn == 1)
-				state(n1.selectMove(state, simulationsPerFightMove)) = turn;
+				move = n1.selectMove(state, simulationsPerFightMove);
 			else
-				state(n2.selectMove(-state, simulationsPerFightMove)) = turn;
-			auto pair = evaluateState(state);
+				move = n2.selectMove(state, simulationsPerFightMove);
+			state = Node::nextStateC4(state, move);
+			auto pair = Node::evaluateStateC4(state);
 			if (pair.first) {
-				if (pair.second != 0) {
-					if (pair.second*turn < 0) {
-						cout << "Error: Impossible for to win game on opponent's turn\n";
-						break;
-					}
+				if (pair.second == 1) {
 					if (turn == 1)
 						win1++;
 					else
 						win2++;
 				}
+				if (pair.second == -1) {
+					cout << "Error: Impossible to win on opponent's turn\n";
+				}
 				break;
 			}
+			state = -state;
 			turn = -turn;
 		}
 	}
@@ -424,8 +207,8 @@ const Network2& fight(const Network2& n1, const Network2& n2) {
 		return n2;
 }
 
-void printBoard(Vec s, bool ints) {
-	if (s.rows() < 9) {
+void printBoardTTT(Vec s, bool ints) {
+	if (s.rows() < 10) {
 		cout << "Error: state size too small when printing\n";
 		return;
 	}
@@ -443,10 +226,35 @@ void printBoard(Vec s, bool ints) {
 	}
 }
 
+
+void printBoardC4(Vec s, bool isState) {
+	if (isState) {
+		if (s.rows() != stateSize) {
+			cout << "Error: state size does not match when printing\n";
+			return;
+		}
+		for (int i = 5; i >= 0; i--) {
+			for (int j = 0; j < 7; j++)
+				printf("%d ", (int)s(7 * i + j));
+			printf("\n");
+		}
+	}
+	else {
+		if (s.rows() != maxMoves+1) {
+			cout << "Error: probability distribution size does not match when printing\n";
+			return;
+		}
+		for (int i = 0; i < 7; i++)
+			printf("%.2lf ", s(i));
+		printf("\nValue: %.2lf\n", s(7));
+	}
+	printf("\n");
+}
+
 void Network2::train(int iterations) {
 	bool showSample = true;
 	ofstream fout;
-	const int gamesPerIteration = 1000;
+	const int gamesPerIteration = 100;
 	Network2 before;
 	for (int i = 0; i < iterations; i++)
 	{
@@ -464,14 +272,14 @@ void Network2::train(int iterations) {
 			if ((i + 1) % miniBatchSize == 0) {
 				if (showSample && i + 1 == miniBatchSize) {
 					cout << "\nSample state:\n";
-					printBoard(batch.col(0), true);
+					printBoardC4(batch.col(0), true);
 				}
 				feedForward(batch);
 				if (showSample && i + 1 == miniBatchSize) {
 					cout << "\nPrediction:\n";
-					printBoard(batch.col(0), false);
+					printBoardC4(batch.col(0), false);
 					cout << "\nAnswers:\n";
-					printBoard(answers.col(0), false);
+					printBoardC4(answers.col(0), false);
 				}
 				if (isnan(batch(0, 0)))
 					cout << "NAN!\n";
@@ -492,7 +300,8 @@ void Network2::train(int iterations) {
 		}
 
 		// check whether neural net has improved during the iteration
-		*this = fight(*this, before);
+//		*this = fight(before, *this);
+		fight(before, *this);
 
 		age++;
 		printf("Age: %d\n", age);
@@ -515,34 +324,32 @@ void Network2::play() {
 		cout << "Do you want to go first? (Enter 0 or 1) ";
 		cin >> first;
 		int turn = 2 * first - 1, move;
-		Vec state = Vec::Zero(9);
+		State state = startState;
 		while (true) {
 			if (turn == 1) { // Human Turn
-				printBoard(state, true);
+				printBoardC4(state, true);
 				cout << "Your Move: ";
 				cin >> move;
-				state(move) = 1;
+				state = Node::nextStateC4(state, move);
 			}
 			else { // Computer Turn
-				move = selectMove(-state, simulationsPerGameMove);
-				state(move) = -1;
+				move = selectMove(state, simulationsPerGameMove);
+				state = Node::nextStateC4(state, move);
 				cout << "Computer's Move: " << move << "\n";
 			}
-			auto pair = evaluateState(state);
+			auto pair = Node::evaluateStateC4(state);
 			if (pair.first) {
-				if (pair.second != 0) {
-					if (pair.second*turn < 0) {
-						cout << "Error: Impossible for to win game on opponent's turn\n";
-						break;
-					}
+				if (pair.second == 1) {
 					if (turn == 1)
 						cout << "You won\n";
 					else
 						cout << "Computer won\n";
 				}
+				else if (pair.second == -1)
+					cout << "Error: impossible to win on opponent's turn\n";
 				else
 					cout << "Tie\n";
-				printBoard(state, true);
+				printBoardC4(state, true);
 				break;
 			}
 			turn = -turn;
