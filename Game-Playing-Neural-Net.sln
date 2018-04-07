@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27428.2011
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Game-Playing-Neural-Net", "Game-Playing-Neural-Net.vcxproj", "{AC6511B9-C871-4E00-9424-E0DCC8AFC955}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AC6511B9-C871-4E00-9424-E0DCC8AFC955}.Debug|x64.ActiveCfg = Debug|x64
+		{AC6511B9-C871-4E00-9424-E0DCC8AFC955}.Debug|x64.Build.0 = Debug|x64
+		{AC6511B9-C871-4E00-9424-E0DCC8AFC955}.Debug|x86.ActiveCfg = Debug|Win32
+		{AC6511B9-C871-4E00-9424-E0DCC8AFC955}.Debug|x86.Build.0 = Debug|Win32
+		{AC6511B9-C871-4E00-9424-E0DCC8AFC955}.Release|x64.ActiveCfg = Release|x64
+		{AC6511B9-C871-4E00-9424-E0DCC8AFC955}.Release|x64.Build.0 = Release|x64
+		{AC6511B9-C871-4E00-9424-E0DCC8AFC955}.Release|x86.ActiveCfg = Release|Win32
+		{AC6511B9-C871-4E00-9424-E0DCC8AFC955}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D1297C14-E4F6-41A0-AD0E-4DCB24E4311E}
+	EndGlobalSection
+EndGlobal
