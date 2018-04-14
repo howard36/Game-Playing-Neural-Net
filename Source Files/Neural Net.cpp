@@ -5,6 +5,53 @@
 
 // Network2::Network2(const std::vector<Layer>& _layers, const checker_type& ch, int mbs, double lr, double maxr, double minr, double L2, double m)
 
+// game-specific functions
+void printBoardTTT(Vec s, bool ints) {
+	if (s.rows() < 10) {
+		cout << "Error: state size too small when printing\n";
+		return;
+	}
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 3; j++) {
+			if (ints)
+				printf("%d ", (int)s(3 * i + j));
+			else
+				printf("%.2lf ", s(3 * i + j));
+		}
+		printf("\n");
+	}
+	if (s.rows() == 10) {
+		printf("Value: %.2lf\n", s(9));
+	}
+}
+
+void printBoardC4(Vec s, bool isState) {
+	if (isState) {
+		if (s.rows() != stateSize) {
+			cout << "Error: state size does not match when printing\n";
+			return;
+		}
+		for (int i = 5; i >= 0; i--) {
+			for (int j = 0; j < 7; j++) {
+				if (s(7 * i + j) != -1)
+					printf(" ");
+				printf("%d ", (int)s(7 * i + j));
+			}
+			printf("\n");
+		}
+	}
+	else {
+		if (s.rows() != maxMoves + 1) {
+			cout << "Error: probability distribution size does not match when printing\n";
+			return;
+		}
+		for (int i = 0; i < 7; i++)
+			printf("%.2lf ", s(i));
+		printf("\nValue: %.2lf\n", s(7));
+	}
+	printf("\n");
+}
+
 Network2::Network2() {
 	randGen = mt19937(randDev());
 }
@@ -136,25 +183,26 @@ void Network2::simulate(Node* const start) const {
 	}
 }
 
-int Network2::selectMove(const State& s, int moves) const {
+int Network2::selectMove(const State& s, int moves, trbatch& data) const {
 	Node* current = new Node(s, nullptr);
 	for (int i = 0; i < moves; i++)
 		simulate(current);
 	int move = current->chooseMove();
+	data.push_back(make_pair(s, current->getProbDistribution())); // value to be added later in fight
 	delete current;
 	return move;
 }
 
 void Network2::selfPlay(trbatch& trainingData) {
-	const int simulationsPerMove = 100;
+	const int simsPerMove = 100;
 	State start = startState;
 	Node* current = new Node(start, nullptr);
 	while (!current->isEndState()) {
-		for (int i = 0; i < simulationsPerMove; i++)
+		for (int i = 0; i < simsPerMove; i++)
 			simulate(current);
 		current = current->chooseNewState();
 	}
-	int winner = current->getEndVal();
+	double winner = current->getEndVal();
 	Node* prev = current;
 	current = current->getParent();
 	while (current != nullptr) {
@@ -168,36 +216,48 @@ void Network2::selfPlay(trbatch& trainingData) {
 	delete prev;
 }
 
-const Network2& fight(const Network2& n1, const Network2& n2) {
+const Network2& fight(const Network2& n1, const Network2& n2, trbatch& data) {
 	cout << "Fight Result: ";
-	const int simulationsPerFightMove = 50;
-	const int games = 20;
-	int win1 = 0, win2 = 0;
+	const int simsPerFightMove = 100;
+	const int games = 50;
+	int win1 = 0, win2 = 0, lastInd = data.size(); // lastInd is the last index in data that needs the result to be added
 	for (int i = 0; i < games; i++) {
 		State state = startState;
 		int turn = 2 * (i % 2) - 1;
 		while (true) {
 			int move;
 			if (turn == 1)
-				move = n1.selectMove(state, simulationsPerFightMove);
+				move = n1.selectMove(state, simsPerFightMove, data);
 			else
-				move = n2.selectMove(state, simulationsPerFightMove);
+				move = n2.selectMove(state, simsPerFightMove, data);
 			state = Node::nextStateC4(state, move);
 			auto pair = Node::evaluateStateC4(state);
 			if (pair.first) {
+				double winner; // the winner of the last state, from that state's perspective
 				if (pair.second == 1) {
 					if (turn == 1)
 						win1++;
 					else
 						win2++;
+					winner = 1;
 				}
-				if (pair.second == -1) {
+				else if (pair.second == -1) {
 					cout << "Error: Impossible to win on opponent's turn\n";
 				}
+				else
+					winner = 0;
+				for (int i = data.size() - 1; i >= lastInd; i--) {
+					data[i].second(maxMoves) = winner;
+					winner = -winner;
+				}
+				lastInd = data.size();
 				break;
 			}
 			state = -state;
 			turn = -turn;
+		}
+		if (i % 10 == 9) {
+			cout << win1 << " to " << win2 << "\n";			
 		}
 	}
 	cout << win1 << " to " << win2 << "\n";
@@ -207,115 +267,88 @@ const Network2& fight(const Network2& n1, const Network2& n2) {
 		return n2;
 }
 
-void printBoardTTT(Vec s, bool ints) {
-	if (s.rows() < 10) {
-		cout << "Error: state size too small when printing\n";
-		return;
-	}
-	for (int i = 0; i < 3; i++) {
-		for (int j = 0; j < 3; j++) {
-			if (ints)
-				printf("%d ", (int)s(3 * i + j));
-			else
-				printf("%.2lf ", s(3 * i + j));
-		}
-		printf("\n");
-	}
-	if (s.rows() == 10) {
-		printf("Value: %.2lf\n", s(9));
-	}
-}
-
-
-void printBoardC4(Vec s, bool isState) {
-	if (isState) {
-		if (s.rows() != stateSize) {
-			cout << "Error: state size does not match when printing\n";
-			return;
-		}
-		for (int i = 5; i >= 0; i--) {
-			for (int j = 0; j < 7; j++) {
-				if (s(7 * i + j) != -1)
-					printf(" ");
-				printf("%d ", (int)s(7 * i + j));
+void Network2::learn(trbatch& data) {
+	bool showSample = true;
+	shuffle(data.begin(), data.end(), randGen);
+	Mat batch(in, miniBatchSize);
+	Mat answers(out, miniBatchSize);
+	for (int i = 0; i < data.size(); ++i) {
+		batch.col(i % miniBatchSize) = data[i].first;
+		answers.col(i % miniBatchSize) = data[i].second;
+		if ((i + 1) % miniBatchSize == 0) {
+			if (showSample && i + 1 == miniBatchSize) {
+				cout << "\nSample state:\n";
+				printBoardC4(batch.col(0), true);
 			}
-			printf("\n");
+			feedForward(batch);
+			if (showSample && i + 1 == miniBatchSize) {
+				cout << "Prediction:\n";
+				printBoardC4(batch.col(0), false);
+				cout << "Answers:\n";
+				printBoardC4(answers.col(0), false);
+			}
+			if (isnan(batch(0, 0)))
+				cout << "NAN!\n";
+
+			// backpropagate error
+			Mat WTD;
+			layers[numLayers - 1]->computeDeltaLast(batch, answers, WTD);
+			for (int i = numLayers - 2; i >= 0; i--) {
+				layers[i]->computeDeltaBack(WTD);
+			}
+			// updates
+			for (int i = 0; i < numLayers; i++) {
+				layers[i]->updateBiasAndWeights(learnRate);
+			}
+			batch.resize(in, miniBatchSize);
+			answers.resize(out, miniBatchSize);
 		}
 	}
-	else {
-		if (s.rows() != maxMoves+1) {
-			cout << "Error: probability distribution size does not match when printing\n";
-			return;
-		}
-		for (int i = 0; i < 7; i++)
-			printf("%.2lf ", s(i));
-		printf("\nValue: %.2lf\n", s(7));
-	}
-	printf("\n");
 }
 
 void Network2::train(int iterations) {
-	bool showSample = true;
-	ofstream fout;
 	const int gamesPerIteration = 100;
+	ofstream fout;
 	Network2 before;
-	Network2 other("Connect4 1 (100-100)");
-	for (int i = 0; i < iterations; i++)
-	{
-		before = *this; // the state of the network before this iteration
+//	Network2 best(name + " Best");
+	Network2 roleModel("Connect4 2 (200-200-200)");
+	for (int i = 0; i < iterations; i++) {
 		trbatch data;
-		for (int game = 0; game < gamesPerIteration; game++) {
-			selfPlay(data);
-		}
-		shuffle(data.begin(), data.end(), randGen);
-		Mat batch(in, miniBatchSize);
-		Mat answers(out, miniBatchSize);
-		for (int i = 0; i < data.size(); ++i) {
-			batch.col(i % miniBatchSize) = data[i].first;
-			answers.col(i % miniBatchSize) = data[i].second;
-			if ((i + 1) % miniBatchSize == 0) {
-				if (showSample && i + 1 == miniBatchSize) {
-					cout << "\nSample state:\n";
-					printBoardC4(batch.col(0), true);
-				}
-				feedForward(batch);
-				if (showSample && i + 1 == miniBatchSize) {
-					cout << "\nPrediction:\n";
-					printBoardC4(batch.col(0), false);
-					cout << "\nAnswers:\n";
-					printBoardC4(answers.col(0), false);
-				}
-				if (isnan(batch(0, 0)))
-					cout << "NAN!\n";
+		before = *this; // the state of the network before this iteration
 
-				// backpropagate error
-				Mat WTD;
-				layers[numLayers - 1]->computeDeltaLast(batch, answers, WTD);
-				for (int i = numLayers - 2; i >= 0; i--) {
-					layers[i]->computeDeltaBack(WTD);
-				}
-				// updates
-				for (int i = 0; i < numLayers; i++) {
-					layers[i]->updateBiasAndWeights(learnRate);
-				}
-				batch.resize(in, miniBatchSize);
-				answers.resize(out, miniBatchSize);
-			}
-		}
+		// generate data from self-play games
+		for (int game = 0; game < gamesPerIteration; game++)
+			selfPlay(data);
+
+		learn(data);
 
 		// check whether neural net has improved during the iteration
-//		*this = fight(before, *this);
-		fight(before, *this);
-		fight(other, *this);
+		cout << "Before vs Current\n";
+		fight(before, *this, data);
+
+		/*
+		cout << "\nBest vs Current\n";
+		best = fight(best, *this, data);
+
+		fout.open(name + " best.txt");
+		fout << best;
+		fout.close();
+		*/
+		cout << "\nRole Model vs Current\n";
+		fight(roleModel, *this, data);
+
+		// use data from fight
+		learn(data);
 
 		age++;
-		printf("Age: %d\n", age);
+		cout << "Age: " << age <<"\n====================================\n";
 
 		fout.open(name + ".txt");
 		fout << *this;
 		fout.close();
+
 		if (age % 100 == 0) { // save record of progress every 100 iterations
-			fout.open(name+" at iteration " + to_string(age) + ".txt");
+			fout.open(name + " at iteration " + to_string(age) + ".txt");
 			fout << *this;
 			fout.close();
 		}
@@ -323,7 +356,8 @@ void Network2::train(int iterations) {
 }
 
 void Network2::play() {
-	const int simulationsPerGameMove = 1000;
+	const int simsPerGameMove = 1000;
+	trbatch data;
 	int keepPlaying, first;
 	do {
 		cout << "Do you want to go first? (Enter 0 or 1) ";
@@ -343,7 +377,7 @@ void Network2::play() {
 				state = Node::nextStateC4(state, move);
 			}
 			else { // Computer Turn
-				move = selectMove(state, simulationsPerGameMove);
+				move = selectMove(state, simsPerGameMove, data);
 				state = Node::nextStateC4(state, move);
 				cout << "Computer's Move: " << move << "\n";
 			}

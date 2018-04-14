@@ -30,7 +30,7 @@ public:
 
 	friend ofstream& operator<< (ofstream& f, const Network2& n);
 
-	friend const Network2& fight(const Network2& n1, const Network2& n2);
+	friend const Network2& fight(const Network2& n1, const Network2& n2, trbatch& data);
 
 	Network2& operator= (const Network2& n);
 
@@ -43,8 +43,10 @@ private:
 
 	void simulate(Node * const start) const; // go down the MCTS tree, based on moves chosen by the neural net
 
-	int selectMove(const State& s, int moves) const;
+	int selectMove(const State& s, int moves, trbatch& data) const;
 	
+	void learn(trbatch& data);
+
 	// properties
 	checker_type checker;
 
