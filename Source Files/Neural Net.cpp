@@ -341,7 +341,7 @@ void Network2::train(int iterations) {
 		learn(data);
 
 		age++;
-		cout << "Age: " << age <<"\n====================================\n";
+		cout << "Age: " << age << "\n";
 
 		fout.open(name + ".txt");
 		fout << *this;
@@ -352,11 +352,13 @@ void Network2::train(int iterations) {
 			fout << *this;
 			fout.close();
 		}
+		
+		cout << "Saved\n====================================\n";
 	}
 }
 
 void Network2::play() {
-	const int simsPerGameMove = 1000;
+	const int simsPerGameMove = 5000;
 	trbatch data;
 	int keepPlaying, first;
 	do {
