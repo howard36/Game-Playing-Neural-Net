@@ -16,7 +16,7 @@ private:
 	bool leaf; // whether this is currently a leaf node in the game tree
 	bool end; // whether this is an ending state
 	double endVal; // the winner (if it is an end state)
-	const double c_puct = 0.01; // change?
+	const double c_puct = 0.1; // change?
 
 public:
 	Node(State s, Node* p);

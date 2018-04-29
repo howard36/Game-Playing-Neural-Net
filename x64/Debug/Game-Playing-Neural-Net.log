@@ -1,0 +1,21 @@
+﻿cl : Command line warning D9002: ignoring unknown option '/arch:SSE2'
+  ActivationFunction.cpp
+  FullyConnectedLayer.cpp
+c:\users\howard halim\documents\programs\projects\game-playing-neural-net\source files\fullyconnectedlayer.cpp(19): warning C4244: 'argument': conversion from '__int64' to 'unsigned int', possible loss of data
+  c:\users\howard halim\documents\programs\projects\game-playing-neural-net\source files\fullyconnectedlayer.cpp(14): note: while compiling class template member function 'FullyConnectedLayer<SigmoidActivationFunction>::FullyConnectedLayer(int,int)'
+  c:\users\howard halim\documents\programs\projects\game-playing-neural-net\source files\fullyconnectedlayer.cpp(134): note: see reference to function template instantiation 'FullyConnectedLayer<SigmoidActivationFunction>::FullyConnectedLayer(int,int)' being compiled
+  c:\users\howard halim\documents\programs\projects\game-playing-neural-net\source files\fullyconnectedlayer.cpp(134): note: see reference to class template instantiation 'FullyConnectedLayer<SigmoidActivationFunction>' being compiled
+  Layer.cpp
+  Main.cpp
+c:\users\howard halim\documents\programs\projects\game-playing-neural-net\source files\main.cpp(41): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
+  Neural Net.cpp
+c:\users\howard halim\documents\programs\projects\game-playing-neural-net\source files\neural net.cpp(78): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+c:\users\howard halim\documents\programs\projects\game-playing-neural-net\source files\neural net.cpp(223): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+c:\users\howard halim\documents\programs\projects\game-playing-neural-net\source files\neural net.cpp(249): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+c:\users\howard halim\documents\programs\projects\game-playing-neural-net\source files\neural net.cpp(253): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+  Node.cpp
+  ActivationFunction.obj : MSIL .netmodule or module compiled with /GL found; restarting link with /LTCG; add /LTCG to the link command line to improve linker performance
+LINK : warning LNK4075: ignoring '/INCREMENTAL' due to '/LTCG' specification
+  Generating code
+  Finished generating code
+  Game-Playing-Neural-Net.vcxproj -> C:\Users\Howard Halim\Documents\Programs\Projects\Game-Playing-Neural-Net\x64\Debug\Game-Playing-Neural-Net.exe

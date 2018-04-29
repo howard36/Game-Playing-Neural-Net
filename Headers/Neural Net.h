@@ -20,7 +20,7 @@ public:
 	~Network2();
 
 //	void train(trbatch& data, trbatch& test, int numEpochs);
-	void train(int iterations);
+	void train(int sims, int games);
 
 	void play();
 
@@ -30,7 +30,7 @@ public:
 
 	friend ofstream& operator<< (ofstream& f, const Network2& n);
 
-	friend const Network2& fight(const Network2& n1, const Network2& n2, trbatch& data);
+	friend const Network2& fight(const Network2& n1, const Network2& n2, int sims, int games, trbatch& data);
 
 	Network2& operator= (const Network2& n);
 
@@ -39,7 +39,7 @@ public:
 private:
 
 	// functions
-	void selfPlay(trbatch& trainingData); // plays a game against itself to generate training data ofMCTS probability distributions
+	void selfPlay(trbatch& trainingData, int sims); // plays a game against itself to generate training data ofMCTS probability distributions
 
 	void simulate(Node * const start) const; // go down the MCTS tree, based on moves chosen by the neural net
 

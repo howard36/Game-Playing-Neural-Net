@@ -1,0 +1,9 @@
+﻿cl : Command line warning D9002: ignoring unknown option '/arch:SSE2'
+  Main.cpp
+c:\users\howard halim\documents\programs\projects\game-playing-neural-net\source files\main.cpp(41): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
+  Generating code
+  0 of 2301 functions ( 0.0%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    0 functions had inline decision re-evaluated but remain unchanged
+  Finished generating code
+  Game-Playing-Neural-Net.vcxproj -> C:\Users\Howard Halim\Documents\Programs\Projects\Game-Playing-Neural-Net\x64\Release\Game-Playing-Neural-Net.exe

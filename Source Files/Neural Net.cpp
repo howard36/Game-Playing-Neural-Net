@@ -33,9 +33,12 @@ void printBoardC4(Vec s, bool isState) {
 		}
 		for (int i = 5; i >= 0; i--) {
 			for (int j = 0; j < 7; j++) {
-				if (s(7 * i + j) != -1)
-					printf(" ");
-				printf("%d ", (int)s(7 * i + j));
+				if ((int)s(7 * i + j) == 0)
+					printf(". ");
+				else if ((int)s(7 * i + j) == 1)
+					printf("X ");
+				else
+					printf("O ");
 			}
 			printf("\n");
 		}
@@ -193,12 +196,11 @@ int Network2::selectMove(const State& s, int moves, trbatch& data) const {
 	return move;
 }
 
-void Network2::selfPlay(trbatch& trainingData) {
-	const int simsPerMove = 100;
+void Network2::selfPlay(trbatch& trainingData, int sims) {
 	State start = startState;
 	Node* current = new Node(start, nullptr);
 	while (!current->isEndState()) {
-		for (int i = 0; i < simsPerMove; i++)
+		for (int i = 0; i < sims; i++)
 			simulate(current);
 		current = current->chooseNewState();
 	}
@@ -216,10 +218,8 @@ void Network2::selfPlay(trbatch& trainingData) {
 	delete prev;
 }
 
-const Network2& fight(const Network2& n1, const Network2& n2, trbatch& data) {
+const Network2& fight(const Network2& n1, const Network2& n2, int sims, int games, trbatch& data) {
 	cout << "Fight Result: ";
-	const int simsPerFightMove = 100;
-	const int games = 50;
 	int win1 = 0, win2 = 0, lastInd = data.size(); // lastInd is the last index in data that needs the result to be added
 	for (int i = 0; i < games; i++) {
 		State state = startState;
@@ -227,9 +227,9 @@ const Network2& fight(const Network2& n1, const Network2& n2, trbatch& data) {
 		while (true) {
 			int move;
 			if (turn == 1)
-				move = n1.selectMove(state, simsPerFightMove, data);
+				move = n1.selectMove(state, sims, data);
 			else
-				move = n2.selectMove(state, simsPerFightMove, data);
+				move = n2.selectMove(state, sims, data);
 			state = Node::nextStateC4(state, move);
 			auto pair = Node::evaluateStateC4(state);
 			if (pair.first) {
@@ -260,7 +260,10 @@ const Network2& fight(const Network2& n1, const Network2& n2, trbatch& data) {
 			cout << win1 << " to " << win2 << "\n";			
 		}
 	}
-	cout << win1 << " to " << win2 << "\n";
+	if (win1 * 3 >= win2 * 4) {
+		data.clear();
+		cout << "Data Cleared\n";
+	}
 	if (win1 > win2)
 		return n1;
 	else
@@ -306,37 +309,36 @@ void Network2::learn(trbatch& data) {
 	}
 }
 
-void Network2::train(int iterations) {
-	const int gamesPerIteration = 100;
+void Network2::train(int sims, int games) {
 	ofstream fout;
 	Network2 before;
 //	Network2 best(name + " Best");
-	Network2 roleModel("Connect4 2 (200-200-200)");
-	for (int i = 0; i < iterations; i++) {
-		trbatch data;
+//	Network2 roleModel("Connect4 2 (200-200-200)");
+	trbatch data;
+	while (true) {
 		before = *this; // the state of the network before this iteration
 
 		// generate data from self-play games
-		for (int game = 0; game < gamesPerIteration; game++)
-			selfPlay(data);
+		for (int game = 0; game < games; game++)
+			selfPlay(data, sims);
 
 		learn(data);
 
 		// check whether neural net has improved during the iteration
 		cout << "Before vs Current\n";
-		fight(before, *this, data);
-
+		*this = fight(before, *this, sims, games, data);
 		/*
 		cout << "\nBest vs Current\n";
-		best = fight(best, *this, data);
+		best = fight(best, *this, sims, games, data);
 
 		fout.open(name + " best.txt");
 		fout << best;
 		fout.close();
 		*/
+		/*
 		cout << "\nRole Model vs Current\n";
 		fight(roleModel, *this, data);
-
+		*/
 		// use data from fight
 		learn(data);
 
@@ -347,7 +349,7 @@ void Network2::train(int iterations) {
 		fout << *this;
 		fout.close();
 
-		if (age % 100 == 0) { // save record of progress every 100 iterations
+		if (age % 50 == 0) { // save record of progress every 100 iterations
 			fout.open(name + " at iteration " + to_string(age) + ".txt");
 			fout << *this;
 			fout.close();
@@ -365,13 +367,30 @@ void Network2::play() {
 		cout << "Do you want to go first? (Enter 0 or 1) ";
 		cin >> first;
 		int turn = 2 * first - 1, move;
+		bool undo = false; // whether last move was undo
 		State state = startState;
+		vector<State> history;
 		while (true) {
 			if (turn == 1) { // Human Turn
 				printBoardC4(state, true);
+				if (!undo)
+					history.push_back(state);
 				cout << "Your Move: ";
-				vector<bool> valid = Node::validMovesC4(state);
 				cin >> move;
+				if (move == -1) {
+					if (history.size() == 1)
+						cout << "Cannot undo move! This is the starting position\n";
+					else {
+						history.pop_back();
+						state = history[history.size() - 1];
+						cout << "You undid your last move\n";
+					}
+					undo = true;
+					continue;
+				}
+				else
+					undo = false;
+				vector<bool> valid = Node::validMovesC4(state);
 				while (move < 0 || move >= 7 || !valid[move]) {
 					cout << "Invalid Move! Choose a new move: ";
 					cin >> move;
