@@ -186,14 +186,15 @@ void Network2::simulate(Node* const start) const {
 	}
 }
 
-int Network2::selectMove(const State& s, int moves, trbatch& data) const {
+pair<int, double> Network2::selectMove(const State& s, int moves, trbatch& data) const {
 	Node* current = new Node(s, nullptr);
 	for (int i = 0; i < moves; i++)
 		simulate(current);
 	int move = current->chooseMove();
 	data.push_back(make_pair(s, current->getProbDistribution())); // value to be added later in fight
+	double prob = (current->getProbDistribution())[move];
 	delete current;
-	return move;
+	return make_pair(move, prob);
 }
 
 void Network2::selfPlay(trbatch& trainingData, int sims) {
@@ -227,9 +228,9 @@ const Network2& fight(const Network2& n1, const Network2& n2, int sims, int game
 		while (true) {
 			int move;
 			if (turn == 1)
-				move = n1.selectMove(state, sims, data);
+				move = n1.selectMove(state, sims, data).first;
 			else
-				move = n2.selectMove(state, sims, data);
+				move = n2.selectMove(state, sims, data).first;
 			state = Node::nextStateC4(state, move);
 			auto pair = Node::evaluateStateC4(state);
 			if (pair.first) {
@@ -327,6 +328,14 @@ void Network2::train(int sims, int games) {
 		// check whether neural net has improved during the iteration
 		cout << "Before vs Current\n";
 		*this = fight(before, *this, sims, games, data);
+		if (data.size() == 0)
+			*this = before;
+		else {
+			learn(data);
+
+			age++;
+			cout << "Age: " << age << "\n";
+		}
 		/*
 		cout << "\nBest vs Current\n";
 		best = fight(best, *this, sims, games, data);
@@ -340,10 +349,6 @@ void Network2::train(int sims, int games) {
 		fight(roleModel, *this, data);
 		*/
 		// use data from fight
-		learn(data);
-
-		age++;
-		cout << "Age: " << age << "\n";
 
 		fout.open(name + ".txt");
 		fout << *this;
@@ -398,9 +403,12 @@ void Network2::play() {
 				state = Node::nextStateC4(state, move);
 			}
 			else { // Computer Turn
-				move = selectMove(state, simsPerGameMove, data);
+				auto pair = selectMove(state, simsPerGameMove, data);
+				move = pair.first;
 				state = Node::nextStateC4(state, move);
 				cout << "Computer's Move: " << move << "\n";
+				if (pair.second < 0.1)
+					cout << "Unusual move played!\n";
 			}
 			auto pair = Node::evaluateStateC4(state);
 			if (pair.first) {
