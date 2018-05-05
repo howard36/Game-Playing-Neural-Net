@@ -354,7 +354,7 @@ void Network2::train(int sims, int games) {
 		fout << *this;
 		fout.close();
 
-		if (age % 50 == 0) { // save record of progress every 100 iterations
+		if (age % 10 == 0) { // save record of progress every 100 iterations
 			fout.open(name + " at iteration " + to_string(age) + ".txt");
 			fout << *this;
 			fout.close();
