@@ -1,0 +1,9 @@
+/tmp/ccn0I7gy.o: In function `main':
+Main.cpp:(.text+0x32b): undefined reference to `Network2::Network2(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >)'
+Main.cpp:(.text+0x37a): undefined reference to `Network2::Network2(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >)'
+Main.cpp:(.text+0x3ab): undefined reference to `Network2::train(int, int)'
+Main.cpp:(.text+0x3ce): undefined reference to `Network2::~Network2()'
+Main.cpp:(.text+0x3dd): undefined reference to `Network2::~Network2()'
+Main.cpp:(.text+0x446): undefined reference to `Network2::~Network2()'
+Main.cpp:(.text+0x455): undefined reference to `Network2::~Network2()'
+collect2: error: ld returned 1 exit status

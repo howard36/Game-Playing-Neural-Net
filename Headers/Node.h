@@ -22,7 +22,7 @@ public:
 	Node(State s, Node* p);
 
 	~Node();
-	
+
 	// used for MCTS simulations
 	Node* chooseBest();
 
@@ -49,7 +49,7 @@ public:
 	static vector<bool> validMovesTTT(State s);
 
 	static vector<bool> validMovesC4(State s);
-	
+
 	bool isLeaf() { return leaf; }
 	Node* getParent() { return parent; }
 	State getState() { return state; }

@@ -19,7 +19,7 @@ FullyConnectedLayer<ActivationFn>::FullyConnectedLayer(int _in, int _out) {
 	randGen = mt19937(chrono::high_resolution_clock::now().time_since_epoch().count());
 	// defaults to mean of 0.0, standard dev of 1.0
 	randDistribution = normal_distribution<double>();
-	
+
 	weights.resize(out, in);
 	biases.resize(out);
 

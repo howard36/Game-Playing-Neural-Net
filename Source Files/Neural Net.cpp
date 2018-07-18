@@ -258,7 +258,7 @@ const Network2& fight(const Network2& n1, const Network2& n2, int sims, int game
 			turn = -turn;
 		}
 		if (i % 10 == 9) {
-			cout << win1 << " to " << win2 << "\n";			
+			cout << win1 << " to " << win2 << "\n";
 		}
 	}
 	if (win1 * 3 >= win2 * 4) {
@@ -359,7 +359,7 @@ void Network2::train(int sims, int games) {
 			fout << *this;
 			fout.close();
 		}
-		
+
 		cout << "Saved\n====================================\n";
 	}
 }

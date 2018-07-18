@@ -16,7 +16,7 @@ static double sigmoidDeriv(double x) {
 
 
 static double tanhDeriv(double x) {
-	return 1 - (tanh(x)*tanh(x));	
+	return 1 - (tanh(x)*tanh(x));
 }
 
 static double mytanh(double x) {return tanh(x);}

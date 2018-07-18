@@ -38,7 +38,7 @@ public:
 	Layer* copy();
 
 	void write(ofstream& fout);
-	
+
 private: // properties
 
 	// sizes of the layer's input and output
@@ -67,18 +67,18 @@ private: // properties
 
 	// the error from the actual answer, used for backpropagation
 	Mat delta;
-	
-	// Random stuff 
-	
+
+	// Random stuff
+
 	// random device class instance, source of 'true' randomness for initializing random seed
 //	std::random_device randDev;
-	
+
 	// Mersenne twister PRNG, initialized with seed from previous random device instance
 	std::mt19937 randGen;
-	
+
 	// normal distribution
 	std::normal_distribution<double> randDistribution;
-	
+
 };
 
 Layer* read_FC(ifstream& fin);

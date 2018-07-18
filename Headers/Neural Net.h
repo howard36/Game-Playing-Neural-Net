@@ -44,7 +44,7 @@ private:
 	void simulate(Node * const start) const; // go down the MCTS tree, based on moves chosen by the neural net
 
 	pair<int, double> selectMove(const State& s, int moves, trbatch& data) const;
-	
+
 	void learn(trbatch& data);
 
 	// properties
@@ -63,7 +63,7 @@ private:
 
 	// how quickly it learns
 	double learnRate;
-	
+
 //	double maxRate, minRate;
 
 	// how much L2regularization affects cost

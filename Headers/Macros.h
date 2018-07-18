@@ -10,7 +10,7 @@
 #include <fstream>
 #include <functional>
 #include <chrono>
-#include <Eigen/Dense>
+#include <Eigen/Eigen/Dense>
 using namespace std;
 
 typedef long long ll;
