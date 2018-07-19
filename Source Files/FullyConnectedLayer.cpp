@@ -1,5 +1,3 @@
-#pragma once
-
 #include "../Headers/FullyConnectedLayer.h"
 #include "../Headers/Macros.h"
 

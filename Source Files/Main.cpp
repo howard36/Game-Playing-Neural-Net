@@ -3,17 +3,10 @@
 #include "../Headers/ActivationFunction.h"
 #include "../Headers/Neural Net.h"
 
-#include "Neural Net.cpp"
-#include "Node.cpp"
-#include "Layer.cpp"
-#include "FullyConnectedLayer.cpp"
-#include "ActivationFunction.cpp"
-
 typedef FullyConnectedLayer<SigmoidActivationFunction> SigmoidLayer;
 typedef FullyConnectedLayer<SoftMaxActivationFunction> SoftMaxLayer;
 typedef FullyConnectedLayer<CustomActivationFunction> CustomLayer;
-
-
+/*
 pair<int, double> check(const Mat& tocheck, const Mat& correct)
 {
 	if (tocheck.rows() != correct.rows() || tocheck.cols() != correct.cols()) {
@@ -42,7 +35,7 @@ pair<int, double> check(const Mat& tocheck, const Mat& correct)
 	}
 	return make_pair(count, cost / tocheck.cols());
 }
-
+*/
 int main()
 {
 	srand(time(NULL));

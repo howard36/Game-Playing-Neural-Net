@@ -1,5 +1,3 @@
-#pragma once
-
 #include "../Headers/Macros.h"
 #include "../Headers/Neural Net.h"
 #include "../Headers/FullyConnectedLayer.h"
