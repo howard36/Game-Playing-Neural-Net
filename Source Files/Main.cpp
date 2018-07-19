@@ -3,6 +3,12 @@
 #include "../Headers/ActivationFunction.h"
 #include "../Headers/Neural Net.h"
 
+#include "Neural Net.cpp"
+#include "Node.cpp"
+#include "Layer.cpp"
+#include "FullyConnectedLayer.cpp"
+#include "ActivationFunction.cpp"
+
 typedef FullyConnectedLayer<SigmoidActivationFunction> SigmoidLayer;
 typedef FullyConnectedLayer<SoftMaxActivationFunction> SoftMaxLayer;
 typedef FullyConnectedLayer<CustomActivationFunction> CustomLayer;
@@ -45,17 +51,18 @@ int main()
 	layers.push_back(new SigmoidLayer(stateSize, 500));
 	layers.push_back(new SigmoidLayer(500, 500));
 	layers.push_back(new CustomLayer(500, maxMoves+1));
-	Network2 n("Connect4 3 (500-500)", layers, check, stateSize, maxMoves+1, 16, 0.1);
+	Network2 n("Test", layers, check, stateSize, maxMoves+1, 16, 0.1);
 	*/
 
 	trbatch data;
 
 	Network2 n("Connect4 3 (500-500) branch 5.2");
 	Network2 n2("Connect4 3 (500-500) branch 5.1 at iteration 801");
-//	fight(n, n2, 1000, 200, data);
+	// fight(n, n2, 1000, 200, data);
 
-//	n.play();
-	n.train(400, 50);
+	// n.play();
+	printf("Start Training\n");
+	n.train(50, 50);
 
 	cout << "Done!\n";
     return 0;

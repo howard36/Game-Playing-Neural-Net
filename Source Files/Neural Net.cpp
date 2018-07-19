@@ -1,3 +1,5 @@
+#pragma once
+
 #include "../Headers/Macros.h"
 #include "../Headers/Neural Net.h"
 #include "../Headers/FullyConnectedLayer.h"
@@ -61,7 +63,7 @@ Network2::Network2() {
 
 Network2::Network2(string _name) {
 	ifstream fin;
-	fin.open(_name + ".txt");
+	fin.open("../" + _name + ".txt");
 	fin >> *this;
 	fin.close();
 	name = _name;
@@ -313,15 +315,20 @@ void Network2::learn(trbatch& data) {
 void Network2::train(int sims, int games) {
 	ofstream fout;
 	Network2 before;
-//	Network2 best(name + " Best");
+	// Network2 best(name + " Best");
 //	Network2 roleModel("Connect4 2 (200-200-200)");
 	trbatch data;
+	cout << "In train\n";
 	while (true) {
 		before = *this; // the state of the network before this iteration
 
 		// generate data from self-play games
-		for (int game = 0; game < games; game++)
+		for (int game = 0; game < games; game++){
 			selfPlay(data, sims);
+			cout << "Finished game " << game << endl;
+		}
+
+		cout << "Generated data\n";
 
 		learn(data);
 

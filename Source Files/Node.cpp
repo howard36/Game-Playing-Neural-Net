@@ -1,3 +1,5 @@
+#pragma once
+
 #include "../Headers/Macros.h"
 #include "../Headers/Node.h"
 
