@@ -1,79 +1,76 @@
 #pragma once
 
-#include "Macros.h"
 #include "Layer.h"
+#include "Macros.h"
 
 class Node;
 
-class Network2
-{
+class Network2 {
+  public:
+    Network2();
 
-public:
-	Network2();
+    Network2(const string _name);
 
-	Network2(const string _name);
+    Network2(const string _name, const std::vector<Layer *> &_layers, int mbs, double lr, double m);
 
-	Network2(const string _name, const std::vector<Layer*>& _layers, int mbs, double lr, double m);
+    Network2(Network2 &n); // copy constructor
 
-	Network2(Network2& n); // copy constructor
+    ~Network2();
 
-	~Network2();
+    //	void train(trbatch& data, trbatch& test, int numEpochs);
+    void train(int sims, int games);
 
-//	void train(trbatch& data, trbatch& test, int numEpochs);
-	void train(int sims, int games);
+    void play();
 
-	void play();
+    void feedForward(Mat &input) const; // pass by reference. input layer will output as output layer
 
-	void feedForward(Mat& input) const; // pass by reference. input layer will output as output layer
+    friend ifstream &operator>>(ifstream &fin, Network2 &n);
 
-	friend ifstream& operator>> (ifstream& fin, Network2& n);
+    friend ofstream &operator<<(ofstream &f, const Network2 &n);
 
-	friend ofstream& operator<< (ofstream& f, const Network2& n);
+    friend const Network2 &fight(const Network2 &n1, const Network2 &n2, int sims, int games, trbatch &data);
 
-	friend const Network2& fight(const Network2& n1, const Network2& n2, int sims, int games, trbatch& data);
+    Network2 &operator=(const Network2 &n);
 
-	Network2& operator= (const Network2& n);
+  private:
+    // functions
+    void selfPlay(trbatch &trainingData, int sims); // plays a game against itself to generate training data ofMCTS probability distributions
 
-private:
+    void simulate(Node *const start) const; // go down the MCTS tree, based on moves chosen by the neural net
 
-	// functions
-	void selfPlay(trbatch& trainingData, int sims); // plays a game against itself to generate training data ofMCTS probability distributions
+    pair<int, double> selectMove(const State &s, int moves, trbatch &data) const;
 
-	void simulate(Node * const start) const; // go down the MCTS tree, based on moves chosen by the neural net
+    void learn(trbatch &data);
 
-	pair<int, double> selectMove(const State& s, int moves, trbatch& data) const;
+    // the layers in the network
+    std::vector<Layer *> layers;
 
-	void learn(trbatch& data);
+    int numLayers, in, out;
 
-	// the layers in the network
-	std::vector<Layer*> layers;
+    int age; // how many iterations it has been trained for
 
-	int numLayers, in, out;
+    int miniBatchSize;
 
-	int age; // how many iterations it has been trained for
+    string name;
 
-	int miniBatchSize;
+    // how quickly it learns
+    double learnRate;
 
-	string name;
+    //	double maxRate, minRate;
 
-	// how quickly it learns
-	double learnRate;
+    // how much L2regularization affects cost
+    // if high, it will focus on keeping weights low
+    // if low, it will focus on minimizing regular cost function
+    //	double L2;
 
-//	double maxRate, minRate;
+    double momentum;
 
-	// how much L2regularization affects cost
-	// if high, it will focus on keeping weights low
-	// if low, it will focus on minimizing regular cost function
-//	double L2;
+    // to track progress
+    //	double maxfrac = 0;
 
-	double momentum;
+    // random device class instance, source of 'true' randomness for initializing random seed
+    std::random_device randDev;
 
-	// to track progress
-//	double maxfrac = 0;
-
-	// random device class instance, source of 'true' randomness for initializing random seed
-	std::random_device randDev;
-
-	// Mersenne twister PRNG, initialized with seed from previous random device instance
-	std::mt19937 randGen;
+    // Mersenne twister PRNG, initialized with seed from previous random device instance
+    std::mt19937 randGen;
 };

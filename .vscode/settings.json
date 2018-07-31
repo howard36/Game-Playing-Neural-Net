@@ -14,6 +14,10 @@
         "string_view": "cpp",
         "iostream": "cpp",
         "ostream": "cpp",
-        "utility": "cpp"
+        "utility": "cpp",
+        "future": "cpp",
+        "tuple": "cpp",
+        "iosfwd": "cpp",
+        "typeinfo": "cpp"
     }
 }

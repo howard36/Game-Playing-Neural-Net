@@ -7,32 +7,31 @@
 typedef Eigen::MatrixXd Mat;
 
 class Layer {
-public:
+  public:
+    Layer();
 
-	Layer();
+    virtual ~Layer() = 0;
 
-	virtual ~Layer()=0;
+    virtual void apply(Mat &input) = 0;
 
-	virtual void apply(Mat& input)=0;
+    // if this layer is the last layer, computes the delta (error) given the output and correct answer
+    virtual void computeDeltaLast(const Mat &output, const Mat &ans, Mat &WTD) = 0;
 
-	// if this layer is the last layer, computes the delta (error) given the output and correct answer
-	virtual void computeDeltaLast(const Mat& output, const Mat& ans, Mat& WTD)=0;
+    // if this layer is not the last layer, computes the delta from the last layer's delta
 
-	// if this layer is not the last layer, computes the delta from the last layer's delta
+    virtual void computeDeltaBack(Mat &WTD) = 0;
 
-	virtual void computeDeltaBack(Mat& WTD)=0;
+    virtual void updateBiasAndWeights(double lrate, double momentum) = 0;
 
-	virtual void updateBiasAndWeights(double lrate, double momentum)=0;
+    virtual std::pair<int, int> getSize() = 0;
 
-	virtual std::pair<int, int> getSize()=0;
+    virtual void print() = 0;
 
-	virtual void print()=0;
+    virtual void write(ofstream &fout) = 0;
 
-	virtual void write(ofstream& fout)=0;
+    virtual Layer *copy() = 0;
 
-	virtual Layer* copy()=0;
-
-	friend Layer* read(ifstream& fin);
+    friend Layer *read(ifstream &fin);
 };
 
-Layer* read(ifstream& fin);
+Layer *read(ifstream &fin);

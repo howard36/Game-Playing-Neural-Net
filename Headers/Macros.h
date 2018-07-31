@@ -1,16 +1,16 @@
 #pragma once
 
-#include <vector>
-#include <random>
+#include <Eigen/Eigen/Dense>
 #include <algorithm>
-#include <iostream>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
-#include <string>
 #include <fstream>
 #include <functional>
-#include <chrono>
-#include <Eigen/Eigen/Dense>
+#include <iostream>
+#include <random>
+#include <string>
+#include <vector>
 using namespace std;
 
 typedef long long ll;
