@@ -22,7 +22,7 @@ public:
 
 	virtual void computeDeltaBack(Mat& WTD)=0;
 
-	virtual void updateBiasAndWeights(double lrate)=0;
+	virtual void updateBiasAndWeights(double lrate, double momentum)=0;
 
 	virtual std::pair<int, int> getSize()=0;
 

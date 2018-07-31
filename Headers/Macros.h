@@ -26,8 +26,5 @@ typedef Vec State;
 typedef std::pair<Vec, Vec> trdata;
 typedef std::vector<trdata> trbatch;
 
-typedef std::function<std::pair<int, double>(const Mat&, const Mat&) > checker_type;
-
-const int maxMoves = 7;
-const int stateSize = 42;
-const State startState = Vec::Zero(stateSize);
+const int maxMoves = 121;
+const int stateSize = 122;

@@ -16,7 +16,7 @@ private:
 	bool leaf; // whether this is currently a leaf node in the game tree
 	bool end; // whether this is an ending state
 	double endVal; // the winner (if it is an end state)
-	const double c_puct = 0.1; // change?
+	const double c_puct = 0.01; // change?
 
 public:
 	Node(State s, Node* p);
@@ -39,16 +39,19 @@ public:
 	Node* chooseNewState();
 
 	static pair<bool, double> evaluateStateTTT(State s);
-
 	static pair<bool, double> evaluateStateC4(State s);
+	static pair<bool, double> evaluateStateHex(State s);
 
 	static State nextStateTTT(State s, int move);
-
 	static State nextStateC4(State s, int move);
+	static State nextStateHex(State s, int move);
 
 	static vector<bool> validMovesTTT(State s);
-
 	static vector<bool> validMovesC4(State s);
+	static vector<bool> validMovesHex(State s);
+
+	static State startState; // this is only a declaration
+	static void initHex();
 
 	bool isLeaf() { return leaf; }
 	Node* getParent() { return parent; }

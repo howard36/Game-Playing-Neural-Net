@@ -11,7 +11,7 @@ class FullyConnectedLayer : public Layer
 public:
 	FullyConnectedLayer();
 	FullyConnectedLayer(int _in, int _out);
-	FullyConnectedLayer(int _in, int _out, const Mat& _weights, const Vec& _biases);
+	FullyConnectedLayer(int _in, int _out, const Mat& W, const Vec& B, const Mat& WV, const Vec& BV);
 
 	~FullyConnectedLayer();
 
@@ -25,7 +25,7 @@ public:
 	// if this layer is not the last layer, computes the delta from the last layer's delta
 	void computeDeltaBack(Mat& WTD);
 
-	void updateBiasAndWeights(double lrate);
+	void updateBiasAndWeights(double lrate, double momentum);
 
 	std::pair<int, int> getSize();
 
@@ -67,6 +67,10 @@ private: // properties
 
 	// the error from the actual answer, used for backpropagation
 	Mat delta;
+
+	Mat weightVelocity;
+
+	Vec biasVelocity;
 
 	// Random stuff
 

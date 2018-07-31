@@ -22,6 +22,8 @@ FullyConnectedLayer<ActivationFn>::FullyConnectedLayer(int _in, int _out) {
 
 	weights.resize(out, in);
 	biases.resize(out);
+	weightVelocity = Mat::Zero(out, in);
+	biasVelocity = Vec::Zero(out);
 
 	for (int i = 0; i < out; ++i) {
 		// set random weights
@@ -33,14 +35,16 @@ FullyConnectedLayer<ActivationFn>::FullyConnectedLayer(int _in, int _out) {
 }
 
 FC_LAYER_TEMPLATE
-FullyConnectedLayer<ActivationFn>::FullyConnectedLayer(int _in, int _out, const Mat& _weights, const Vec& _biases) {
-	in = _in;
-	out = _out;
-	weights = _weights;
-	biases = _biases;
-	if (weights.rows() != out || weights.cols() != in || biases.rows() != out) {
+FullyConnectedLayer<ActivationFn>::FullyConnectedLayer(int _in, int _out, const Mat& W, const Vec& B, const Mat& WV, const Vec& BV) {
+	if (W.rows() != _out || W.cols() != _in || B.rows() != _out || WV.rows() != _out || WV.cols() != _in || BV.rows() != _out) {
 		cout << "Error: Invalid dimensions for weights and biases in FC Layer constructor\n";
 	}
+	in = _in;
+	out = _out;
+	weights = W;
+	biases = B;
+	weightVelocity = WV;
+	biasVelocity = BV;
 }
 
 // destructor
@@ -74,9 +78,13 @@ void FullyConnectedLayer<ActivationFn>::computeDeltaBack(Mat& WTD) {
 }
 
 FC_LAYER_TEMPLATE
-void FullyConnectedLayer<ActivationFn>::updateBiasAndWeights(double lrate) {
-	biases -= lrate*delta.rowwise().mean(); // (BP3)
-	weights -= (lrate / delta.cols())*(delta * prevActivations.transpose()); // (BP4)
+void FullyConnectedLayer<ActivationFn>::updateBiasAndWeights(double lrate, double momentum) {
+	// biases -= lrate*delta.rowwise().mean(); // (BP3)
+	// weights -= (lrate / delta.cols())*(delta * prevActivations.transpose()); // (BP4)
+	biasVelocity = momentum*biasVelocity - lrate*delta.rowwise().mean();
+	weightVelocity = momentum*weightVelocity - (lrate / delta.cols())*(delta * prevActivations.transpose());
+	biases += biasVelocity;
+	weights += weightVelocity;
 }
 
 FC_LAYER_TEMPLATE
@@ -102,16 +110,16 @@ inline pair<int, int> FullyConnectedLayer<ActivationFn>::getSize() { return make
 FC_LAYER_TEMPLATE
 Layer* FullyConnectedLayer<ActivationFn>::copy() {
 	if (ActivationFn::id() == 1) {
-		return new FullyConnectedLayer<SigmoidActivationFunction>(in, out, weights, biases);
+		return new FullyConnectedLayer<SigmoidActivationFunction>(in, out, weights, biases, weightVelocity, biasVelocity);
 	}
 	else if (ActivationFn::id() == 2) {
-		return new FullyConnectedLayer<TanhActivationFunction>(in, out, weights, biases);
+		return new FullyConnectedLayer<TanhActivationFunction>(in, out, weights, biases, weightVelocity, biasVelocity);
 	}
 	else if (ActivationFn::id() == 3) {
-		return new FullyConnectedLayer<SoftMaxActivationFunction>(in, out, weights, biases);
+		return new FullyConnectedLayer<SoftMaxActivationFunction>(in, out, weights, biases, weightVelocity, biasVelocity);
 	}
 	else if (ActivationFn::id() == 4) {
-		return new FullyConnectedLayer<CustomActivationFunction>(in, out, weights, biases);
+		return new FullyConnectedLayer<CustomActivationFunction>(in, out, weights, biases, weightVelocity, biasVelocity);
 	}
 	else {
 		cout << "Error: invalid activation id when copying layer\n";
@@ -124,7 +132,7 @@ void FullyConnectedLayer<ActivationFn>::write(ofstream& fout) {
 	fout << "1\n"; // layer type of a fully connected layer
 	fout << ActivationFn::id() << "\n";
 	fout << in << " " << out << "\n";
-	fout << weights << "\n" << biases << "\n";
+	fout << weights << "\n" << biases << "\n" << weightVelocity << "\n" << biasVelocity << "\n";
 }
 
 Layer* read_FC(ifstream& fin) {
@@ -140,6 +148,14 @@ Layer* read_FC(ifstream& fin) {
 		for (int r = 0; r < out; r++) {
 			fin >> (*layer).biases(r);
 		}
+		for (int r = 0; r < out; r++) {
+			for (int c = 0; c < in; c++) {
+				fin >> (*layer).weightVelocity(r, c);
+			}
+		}
+		for (int r = 0; r < out; r++) {
+			fin >> (*layer).biasVelocity(r);
+		}
 		return layer;
 	}
 	else if (activationType == 2) {
@@ -151,6 +167,14 @@ Layer* read_FC(ifstream& fin) {
 		}
 		for (int r = 0; r < out; r++) {
 			fin >> (*layer).biases(r);
+		}
+		for (int r = 0; r < out; r++) {
+			for (int c = 0; c < in; c++) {
+				fin >> (*layer).weightVelocity(r, c);
+			}
+		}
+		for (int r = 0; r < out; r++) {
+			fin >> (*layer).biasVelocity(r);
 		}
 		return layer;
 	}
@@ -164,6 +188,14 @@ Layer* read_FC(ifstream& fin) {
 		for (int r = 0; r < out; r++) {
 			fin >> (*layer).biases(r);
 		}
+		for (int r = 0; r < out; r++) {
+			for (int c = 0; c < in; c++) {
+				fin >> (*layer).weightVelocity(r, c);
+			}
+		}
+		for (int r = 0; r < out; r++) {
+			fin >> (*layer).biasVelocity(r);
+		}
 		return layer;
 	}
 	else if (activationType == 4) {
@@ -175,6 +207,14 @@ Layer* read_FC(ifstream& fin) {
 		}
 		for (int r = 0; r < out; r++) {
 			fin >> (*layer).biases(r);
+		}
+		for (int r = 0; r < out; r++) {
+			for (int c = 0; c < in; c++) {
+				fin >> (*layer).weightVelocity(r, c);
+			}
+		}
+		for (int r = 0; r < out; r++) {
+			fin >> (*layer).biasVelocity(r);
 		}
 		return layer;
 	}

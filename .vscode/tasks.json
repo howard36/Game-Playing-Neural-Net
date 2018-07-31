@@ -6,11 +6,11 @@
     "isBackground": true,
     "tasks": [
         {
-            "label": "Build C++",
+            "label": "Build And Run C++",
             "command": "cd",
             "args": [
                 "${fileDirname}",
-                ";",
+                "&&",
                 "g++",
                 "-Ofast",
                 "Main.cpp",
@@ -20,14 +20,32 @@
                 "FullyConnectedLayer.cpp",
                 "ActivationFunction.cpp",
                 "-o",
-                "Main.exe",
-                ";",
-                "./Main.exe"
+                "${fileBasenameNoExtension}",
+                "&&",
+                "${fileDirname}/${fileBasenameNoExtension}"
             ],
             "group": {
                 "kind": "build",
                 "isDefault": true
             }
+        },
+        {
+            "label": "Debug Build C++",
+            "command": "cd",
+            "args": [
+                "${fileDirname}",
+                "&&",
+                "g++",
+                "-g",
+                "Main.cpp",
+                "Neural Net.cpp",
+                "Node.cpp",
+                "Layer.cpp",
+                "FullyConnectedLayer.cpp",
+                "ActivationFunction.cpp",
+                "-o",
+                "${fileBasenameNoExtension}",
+            ]
         }
     ]
 }

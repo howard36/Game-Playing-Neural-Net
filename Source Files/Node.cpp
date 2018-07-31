@@ -17,6 +17,14 @@ vector<bool> Node::validMovesC4(State s) {
 	return v;
 }
 
+vector<bool> Node::validMovesHex(State s){
+	vector<bool> v(maxMoves);
+	for (int i = 0; i < maxMoves; i++){
+		v[i] = (s(i) == 0);
+	}
+	return v;
+}
+
 int choose(Vec distribution) {
 	if (distribution.size() != maxMoves+1) {
 		cout << "Error: distribution size does not match\n";
@@ -117,6 +125,79 @@ pair<bool, double> Node::evaluateStateC4(State s) {
 	return make_pair(true, 0);
 }
 
+int visited[125];
+State dfsState(125); // for DFS purposes only
+vector<int> adj[125];
+State Node::startState; // definition for startState
+
+void Node::initHex(){ // this should be in Node.cpp
+	Node::startState = Vec::Zero(122);
+	Node::startState(121) = 1; // player trying to connect vertically
+	// initialize adj
+	// (x, y) -> 11y + x
+	// (0,0) top left corner
+	// 121 top edge, 122 left, 123 bottom, 124 right
+	for (int i = 0; i<121; i++){
+		int x = i%11, y = i/11;
+		if (y == 0){ // top
+			// adj[i].push_back(121);
+			adj[121].push_back(i);
+		}
+		else{
+			adj[i].push_back(i-11);
+		}
+		if (x == 0){ // left
+			// adj[i].push_back(122);
+			adj[122].push_back(i);
+		}
+		else{
+			adj[i].push_back(i-1);
+		}
+		if (y == 10){ // bottom
+			adj[i].push_back(123);
+		}
+		else{
+			adj[i].push_back(i+11);
+		}
+		if (x == 10){ // right
+			adj[i].push_back(124);
+		}
+		else{
+			adj[i].push_back(i+1);
+		}
+		if (x != 0 && y != 10){ // diagonally down-left
+			adj[i].push_back(i+10);
+		}
+		if (x != 10 && y != 0){ // diagonally up-right
+			adj[i].push_back(i-10);
+		}
+	}
+}
+
+void dfs(int v, int player){
+	visited[v] = 1;
+	for (const int &u : adj[v]){
+		if (visited[u] == 0 && dfsState[u] == player){
+			dfs(u, player);
+		}
+	}
+}
+
+pair<bool, double> Node::evaluateStateHex(State s) {
+	dfsState << s, -s(121), s(121), -s(121);
+	memset(visited, 0, sizeof(visited));
+	dfs(121, s(121));
+	if (visited[123]){
+		return make_pair(true, s[121]);
+	}
+	memset(visited, 0, sizeof(visited));
+	dfs(122, -s(121));
+	if (visited[124]){
+		return make_pair(true, -s[121]);
+	}
+	return make_pair(false, 0);
+}
+
 State Node::nextStateTTT(State s, int move) {
 	State copy = s;
 	if (copy(move) != 0)
@@ -138,14 +219,22 @@ State Node::nextStateC4(State s, int move) {
 	return copy;
 }
 
+State Node::nextStateHex(State s, int move){
+	State copy = s;
+	if (move < 0 || move >= 121 || copy(move) != 0) // optimize?
+		cout << "Error: Invalid move\n";
+	copy(move) = 1;
+	return copy;
+}
+
 Node::Node(State s, Node* p) {
 	if (s.rows() != stateSize) {
 		cout << "Error: node initialized with invalid state\n";
 	}
 	state = s;
 	parent = p;
-	valid = validMovesC4(state);
-	auto pair = evaluateStateC4(state);
+	valid = validMovesHex(state);
+	auto pair = evaluateStateHex(state);
 	end = pair.first;
 	endVal = pair.second;
 	leaf = true;
@@ -187,6 +276,17 @@ Node* Node::chooseBest() {
 	}
 	if (bestMove == -1) {
 		cout << "Error: No best move found\n"; // Probabilities might be nan!
+		printf("State: ");
+		for (int i = 0; i < stateSize; i++){
+			cout << state(i) << ", ";
+		}
+		cout << "\n";
+		for (int i = 0; i < maxMoves; i++){
+			if (isnan(P[i])){
+				cout << "Probabilities are nan!\n";
+				return nullptr;
+			}
+		}
 		return nullptr;
 	}
 	return children[bestMove];
@@ -205,8 +305,8 @@ void Node::expand(Vec prob) { // expands node
 	leaf = false;
 	for (int i = 0; i < maxMoves; i++) {
 		if (valid[i]) {
-			State copy = nextStateC4(state, i);
-			copy = -copy; // switch to opponent's point of view
+			State copy = nextStateHex(state, i);
+			copy = -copy; // switch to opponent's point of view, game-dependent
 			children[i] = new Node(copy, this);
 			P[i] = prob(i);
 		}

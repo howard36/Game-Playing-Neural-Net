@@ -1,0 +1,19 @@
+{
+    "files.associations": {
+        "deque": "cpp",
+        "vector": "cpp",
+        "*.tcc": "cpp",
+        "*.expression": "cpp",
+        "alignedvector3": "cpp",
+        "fft": "cpp",
+        "array": "cpp",
+        "list": "cpp",
+        "unordered_map": "cpp",
+        "hash_map": "cpp",
+        "initializer_list": "cpp",
+        "string_view": "cpp",
+        "iostream": "cpp",
+        "ostream": "cpp",
+        "utility": "cpp"
+    }
+}

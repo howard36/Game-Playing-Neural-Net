@@ -10,10 +10,10 @@ class Network2
 
 public:
 	Network2();
-	//	Network2(const std::vector<Layer>& sizes, const checker_type& f, int batchSize, double _learnRate, double maxRate, double minRate, double L2, double momentum);
+
 	Network2(const string _name);
 
-	Network2(const string _name, const std::vector<Layer*>& _layers, const checker_type& ch, int _in, int _out, int mbs, double lr);
+	Network2(const string _name, const std::vector<Layer*>& _layers, int mbs, double lr, double m);
 
 	Network2(Network2& n); // copy constructor
 
@@ -34,8 +34,6 @@ public:
 
 	Network2& operator= (const Network2& n);
 
-	void setChecker(const checker_type& ch);
-
 private:
 
 	// functions
@@ -46,9 +44,6 @@ private:
 	pair<int, double> selectMove(const State& s, int moves, trbatch& data) const;
 
 	void learn(trbatch& data);
-
-	// properties
-	checker_type checker;
 
 	// the layers in the network
 	std::vector<Layer*> layers;
@@ -71,7 +66,7 @@ private:
 	// if low, it will focus on minimizing regular cost function
 //	double L2;
 
-//	double momentum;
+	double momentum;
 
 	// to track progress
 //	double maxfrac = 0;
