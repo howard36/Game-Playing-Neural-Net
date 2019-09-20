@@ -132,6 +132,10 @@ State dfsState(125); // for DFS purposes only
 vector<int> adj[125];
 State Node::startState; // definition for startState
 
+void Node::initC4() { // this should be in Node.cpp
+    Node::startState = Vec::Zero(42);
+}
+
 void Node::initHex() { // this should be in Node.cpp
     Node::startState = Vec::Zero(122);
     Node::startState(121) = 1; // player trying to connect vertically
@@ -231,8 +235,8 @@ Node::Node(State s, Node *p) {
     }
     state = s;
     parent = p;
-    valid = validMovesHex(state);
-    auto pair = evaluateStateHex(state);
+    valid = validMovesC4(state); // game dependent
+    auto pair = evaluateStateC4(state); // game dependent
     end = pair.first;
     endVal = pair.second;
     leaf = true;
@@ -304,7 +308,7 @@ void Node::expand(Vec prob) { // expands node
     leaf = false;
     for (int i = 0; i < maxMoves; i++) {
         if (valid[i]) {
-            State copy = nextStateHex(state, i);
+            State copy = nextStateC4(state, i); // game dependent
             copy = -copy; // switch to opponent's point of view, game-dependent
             children[i] = new Node(copy, this);
             P[i] = prob(i);

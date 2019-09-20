@@ -18,6 +18,8 @@
         "future": "cpp",
         "tuple": "cpp",
         "iosfwd": "cpp",
-        "typeinfo": "cpp"
+        "typeinfo": "cpp",
+        "chrono": "cpp",
+        "dense": "cpp"
     }
 }

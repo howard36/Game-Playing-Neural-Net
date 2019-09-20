@@ -148,14 +148,17 @@ Layer *read_FC(ifstream &fin) {
         for (int r = 0; r < out; r++) {
             fin >> (*layer).biases(r);
         }
-        for (int r = 0; r < out; r++) {
-            for (int c = 0; c < in; c++) {
-                fin >> (*layer).weightVelocity(r, c);
-            }
-        }
-        for (int r = 0; r < out; r++) {
-            fin >> (*layer).biasVelocity(r);
-        }
+        (*layer).weightVelocity = Mat::Zero(out, in);
+        (*layer).biasVelocity = Vec::Zero(out);
+
+        // for (int r = 0; r < out; r++) {
+        //     for (int c = 0; c < in; c++) {
+        //         fin >> (*layer).weightVelocity(r, c);
+        //     }
+        // }
+        // for (int r = 0; r < out; r++) {
+        //     fin >> (*layer).biasVelocity(r);
+        // }
         return layer;
     } else if (activationType == 2) {
         auto layer = new FullyConnectedLayer<TanhActivationFunction>(in, out);
@@ -215,7 +218,7 @@ Layer *read_FC(ifstream &fin) {
         }
         return layer;
     } else {
-        cout << "Error: Invalid activation type when reading layer from file\n";
+        cout << "Error in FullyConnectedLayer.cpp: Invalid activation type when reading layer from file\n";
         return nullptr;
     }
 }

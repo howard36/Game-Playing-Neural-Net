@@ -50,6 +50,7 @@ class Node {
     static vector<bool> validMovesHex(State s);
 
     static State startState; // this is only a declaration
+    static void initC4();
     static void initHex();
 
     bool isLeaf() { return leaf; }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Eigen/Eigen/Dense>
+#include <eigen3/Eigen/Dense>
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -26,5 +26,5 @@ typedef Vec State;
 typedef std::pair<Vec, Vec> trdata;
 typedef std::vector<trdata> trbatch;
 
-const int maxMoves = 121;
-const int stateSize = 122;
+const int maxMoves = 7; // game dependent
+const int stateSize = 42; // game dependent
